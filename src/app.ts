@@ -42,5 +42,5 @@ textWalker.addTrap(
     tw.state.bracesLevel--;
   }
 );
-
+ 
 textWalker.walk();
