@@ -1,8 +1,7 @@
 {
     "compilerOptions": {
-        "module": "commonjs",
-        "target": "es6",
-        "noImplicitAny": false,
+        "target": "es5", 
+        "outDir": "js/",
         "sourceMap": true
-    }
+    }    
 }
