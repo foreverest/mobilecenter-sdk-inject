@@ -40,5 +40,19 @@ public class MainActivity extends AppCompatActivity {
 }
 `;
 
-let injected = mainActivitySdkInject(code, '');
+const appSecret = '15dd2285-a3f4-431a-9640-2695aa37e8a7';
+
+const importStatements = [
+    'import com.microsoft.azure.mobile.MobileCenter;',
+    'import com.microsoft.azure.mobile.analytics.Analytics;',
+    'import com.microsoft.azure.mobile.crashes.Crashes;',
+    'import com.microsoft.azure.mobile.distribute.Distribute;',
+  ];
+
+  const startSdkStatements = [
+    `MobileCenter.start(getApplication(), "${appSecret}"`,
+    '        Analytics.class, Crashes.class, Distribute.class);'
+  ];
+
+let injected = mainActivitySdkInject(code, importStatements, startSdkStatements);
 console.log(injected);

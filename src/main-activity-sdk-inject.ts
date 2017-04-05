@@ -1,21 +1,22 @@
 import { TextWalker } from './text-walker/text-walker';
 
-class InjectBag {
-  blockLevel: number = 0;
-  slComment: boolean = false;
-  mlComment: boolean = false;
-  quotes: string = null;
-  quotesPosition: number;
-  get relevant(): boolean { return !this.slComment && !this.mlComment && !this.quotes; }
-  onCreateMethod: boolean;
+export function mainActivitySdkInject(code: string, importStatements: string[], startSdkStatements: string[]): string {
+  let result: string;
+  let info = analyzeCode(code);
+  
+  if (!info.injectImportPosition || !info.injectStartSdkPosition) 
+    throw new Error("Cannot find appropriate positions for MobileCenter SDK integration.");
+  info.onCreateTabs = info.onCreateTabs || '        ';
 
-  injectImportPosition: number;
-  injectSdkStartPosition: number;
-  onCreateTabs: string;
+  result = code.substr(0, info.injectImportPosition);
+  importStatements.forEach(x => result += '\n' + x);
+  result += code.substr(info.injectImportPosition, info.injectStartSdkPosition - info.injectImportPosition);
+  startSdkStatements.forEach(x => result += '\n' + info.onCreateTabs + x);
+  result += code.substr(info.injectStartSdkPosition);
+  return result;
 }
 
-export function mainActivitySdkInject(code: string, appSecret: string): string {
-  let result: string;
+function analyzeCode(code: string): InjectBag {
   let injectBag = new InjectBag();
   let textWalker = new TextWalker<InjectBag>(code, injectBag);
 
@@ -140,22 +141,25 @@ export function mainActivitySdkInject(code: string, appSecret: string): string {
       tw.currentChar === '}',
     tw => {
       let matches = /\s*$/.exec(tw.back);
-      tw.bag.injectSdkStartPosition = matches ? matches.index : null;
+      tw.bag.injectStartSdkPosition = matches ? matches.index : null;
     }
   );
 
   textWalker.walk();
 
-  console.log(injectBag);
+  return textWalker.bag;
+}
 
-  const imports = 'Imports go here'
-  const sdkStart = 'SDK start goes here'
-  result = 
-    code.substr(0, textWalker.bag.injectImportPosition) + 
-    '\n\\\\' + imports + 
-    code.substr(textWalker.bag.injectImportPosition, textWalker.bag.injectSdkStartPosition - textWalker.bag.injectImportPosition) +
-    '\n' + (textWalker.bag.onCreateTabs || '        ') + '\\\\' + sdkStart + 
-    code.substr(textWalker.bag.injectSdkStartPosition);
+class InjectBag {
+  blockLevel: number = 0;
+  slComment: boolean = false;
+  mlComment: boolean = false;
+  quotes: string = null;
+  quotesPosition: number;
+  get relevant(): boolean { return !this.slComment && !this.mlComment && !this.quotes; }
+  onCreateMethod: boolean;
 
-  return result;
+  injectImportPosition: number;
+  injectStartSdkPosition: number;
+  onCreateTabs: string;
 }
