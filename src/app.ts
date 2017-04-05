@@ -1,46 +1,44 @@
-import { TextWalker } from './text-walker';
-let text = `
-apply plugin: 'com.android.application'
+import { mainActivitySdkInject } from "./main-activity-sdk-inject";
 
-android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
-  
-    buildTypes {
-        release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+let code = `
+package com.example.foreverest.helloandroid;
+
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
+import com.microsoft.azure.mobile.MobileCenter;
+import com.microsoft.azure.mobile.analytics.Analytics;
+import com.microsoft.azure.mobile.crashes.Crashes;
+import com.microsoft.azure.mobile.distribute.Distribute;
+
+public class MainActivity extends AppCompatActivity {
+
+/*
+    protected void onCreate(Bundle savedInstanceState) {
+*/
+    const i = 'protected void onCreate(Bundle savedInstanceState) {';
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) { }
+
+    public void switchButtonOnClick(View view) {
+        EditText editText = (EditText) findViewById(R.id.editText);
+        String message = editText.getText().toString();
+        if (message.isEmpty()) {
+            editText.setText("Hello Android !");
+        }
+        else {
+            editText.setText("");
         }
     }
+
+    public void crashButtonOnClick(View view) {
+        int a = 1/0; //exception
+    }
+
 }
+`;
 
-dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
-    compile 'com.android.support:appcompat-v7:25.3.1'
-    compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    testCompile 'junit:junit:4.12'
-}`;
-
-class State {
-  bracesLevel: number;
-}
-
-let textWalker = new TextWalker<State>(text, new State());
-textWalker.addTrap(
-  tw => tw.prevChar == '{',
-  tw => {
-    tw.state.bracesLevel++;
-  }
-);
-
-textWalker.addTrap(
-  tw => tw.currentChar == '}',
-  tw => {
-    tw.state.bracesLevel--;
-  }
-);
- 
-textWalker.walk();
+let injected = mainActivitySdkInject(code, '');
+console.log(injected);
