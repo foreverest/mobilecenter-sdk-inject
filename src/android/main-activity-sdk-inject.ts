@@ -19,6 +19,7 @@ export function mainActivitySdkInject(code: string, importStatements: string[], 
 }
 
 function analyzeCode(code: string): InjectBag {
+  
   let injectBag = new InjectBag();
   let textWalker = new StandardCodeWalker<InjectBag>(code, injectBag);
 

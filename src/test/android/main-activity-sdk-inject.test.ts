@@ -19,7 +19,7 @@ const startSdkStatements = [
 
 const dir = __dirname + '/../../../src/test/android/code-files/';
 let files = fs.readdirSync(dir);
-let codes = files
+let correctCodes = files
     .filter(x => x.substr(-14) === '.original.java')
     .map(original_name => {
         let name = original_name.substr(0, original_name.length - 14);
@@ -32,6 +32,10 @@ let codes = files
     })
     .filter(x => x);
 
+let incorrectCodes = files
+    .filter(x => x.substr(0, 9) === 'incorrect')
+    .map(name => ({ name, text: fs.readFileSync(dir + name, 'utf8') }));
+
 function normalize(text: string): string {
     while (~text.indexOf('\r\n'))
         text = text.replace('\r\n', '\n');
@@ -39,11 +43,18 @@ function normalize(text: string): string {
 }
 
 describe('Main activity', function () {
-    describe('Inject SDK', function () {
-        codes.forEach(function (code) {
-            it(`should correctly inject SDK in code '${code.name}'`, function () {
+    describe('Inject SDK positives', function () {
+        correctCodes.forEach(function (code) {
+            it(`should correctly inject SDK in the '${code.name}'`, function () {
                 var result = mainActivitySdkInject(code.original, importStatements, startSdkStatements);
                 assert.equal(normalize(result), normalize(code.expected));
+            });
+        });
+    });
+    describe('Inject SDK negatives', function () {
+        incorrectCodes.forEach(function (code) {
+            it(`should throw error in the '${code.name}'`, function () {
+                assert.throws(() => (mainActivitySdkInject(code.text, importStatements, startSdkStatements)));
             });
         });
     });
