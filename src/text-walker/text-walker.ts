@@ -1,64 +1,55 @@
 import { TextWalkerTrap } from './text-walker-trap';
 
 export class TextWalker<TBag> {
-  /**
-   *
-   */
-  constructor(private text: string, private _bag: TBag, private _position: number = 0) {
-        
-  }
+  private _text: string;
+  get text(): string { return this._text; }
 
-  get position(): number {
-    return this._position;
-  }
+  private _bag: TBag;
+  get bag(): TBag { return this._bag; }
 
-  get bag(): TBag {
-    return this._bag;
-  }
-
+  private _position: number = 0;
+  get position(): number { return this._position; }
+    
   private _traps: TextWalkerTrap<TBag>[] = [];
 
-  addTrap(checker: (textWalker: TextWalker<TBag>)=>boolean, reaction: (textWalker: TextWalker<TBag>)=>void) {
-    this._traps.push(new TextWalkerTrap(this, checker, reaction));
+  constructor(text: string, bag: TBag) {
+    this._text = text;
+    this._bag = bag;
   }
 
-  step(): boolean {
-    this._position++;
-    if (this._position >= this.text.length)
-      return  false;
-    this.checkTraps();
-    return true;
+  get backpart(): string { 
+    return this.text.substr(0, this._position); 
+  }
+  get forepart(): string { 
+    return this.text.substr(this._position); 
+  }
+  get currentChar(): string { 
+    return this.text.substr(this._position, 1); 
+  }
+  get prevChar(): string { 
+    return this.text.substr(this._position - 1, 1); 
+  }
+  get nextChar(): string { 
+    return this.text.substr(this._position + 1, 1); 
+  }
+
+  addTrap(condition: (textWalker: TextWalker<TBag>)=>boolean, handler: (textWalker: TextWalker<TBag>)=>void) {
+    this._traps.push(new TextWalkerTrap(this, condition, handler));
   }
 
   walk() {
     while (this.step());
   }
 
-  private checkTraps() {
-    this._traps.forEach(trap => trap.check());
+  step(): boolean {
+    this._position++;
+    if (this._position >= this.text.length)
+      return  false;
+    this.handleTraps();
+    return true;
   }
 
-  get back(): string {
-    return this.text.substr(0, this._position);
-  }
-
-  get front(): string {
-    return this.text.substr(this._position);
-  }
-
-  get currentChar(): string {
-    return this.text.substr(this._position, 1);
-  }
-
-  get prevChar(): string {
-    return this.text.substr(this._position - 1, 1);
-  }
-
-  get nextChar(): string {
-    return this.text.substr(this._position + 1, 1);
-  }
-
-  prevChars(num: number): string {
-    return this.text.substr(this._position - num, num);
+  private handleTraps() {
+    this._traps.forEach(trap => trap.handle());
   }
 }

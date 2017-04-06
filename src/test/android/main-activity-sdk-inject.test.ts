@@ -33,57 +33,6 @@ var codes = files
     })
     .filter(x => x);
 
-// codes.push({
-//   source: // #1
-// `package com.example.foreverest.helloandroid;
-
-// import android.support.v7.app.AppCompatActivity;
-// /*import android.os.Bundle;
-// import android.support.v7.app.AppCompatActivity;*/
-// import android.os.Bundle;
-// //import android.os.Bundle;
-
-// public class MainActivity extends AppCompatActivity {
-// /*
-//     @Override
-//     protected void onCreate(Bundle savedInstanceState) {
-//         super.onCreate(savedInstanceState);
-//         setContentView(R.layout.activity_main);
-//     }*/
-//     //protected void onCreate(Bundle savedInstanceState) {
-//     @Override
-//     protected void onCreate(Bundle savedInstanceState) {
-//         super.onCreate(savedInstanceState);
-//         setContentView(R.layout.activity_main);
-//     }
-// }`, 
-//   expected: // #1
-// `package com.example.foreverest.helloandroid;
-
-// import android.support.v7.app.AppCompatActivity;
-// /*import android.os.Bundle;
-// import android.support.v7.app.AppCompatActivity;*/
-// import android.os.Bundle;
-// //import android.os.Bundle;
-// #imports go here#;
-
-// public class MainActivity extends AppCompatActivity {
-// /*
-//     @Override
-//     protected void onCreate(Bundle savedInstanceState) {
-//         super.onCreate(savedInstanceState);
-//         setContentView(R.layout.activity_main);
-//     }*/
-//     //protected void onCreate(Bundle savedInstanceState) {
-//     @Override
-//     protected void onCreate(Bundle savedInstanceState) {
-//         super.onCreate(savedInstanceState);
-//         setContentView(R.layout.activity_main);
-//         #start sdk goes here#;
-//     }
-// }`
-// });
-
 function normalize(text: string): string {
     while (~text.indexOf('\r\n'))
         text = text.replace('\r\n', '\n');
