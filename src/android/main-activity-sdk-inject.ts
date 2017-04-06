@@ -1,18 +1,21 @@
-import { TextWalker } from './text-walker/text-walker';
+import { TextWalker } from './../text-walker/text-walker';
 
 export function mainActivitySdkInject(code: string, importStatements: string[], startSdkStatements: string[]): string {
   let result: string;
   let info = analyzeCode(code);
   
-  if (!info.injectImportPosition || !info.injectStartSdkPosition) 
+  //console.log(info);
+  
+  if (info.injectImportsAt == undefined || info.injectStartSdkAt == undefined) 
     throw new Error("Cannot find appropriate positions for MobileCenter SDK integration.");
-  info.onCreateTabs = info.onCreateTabs || '        ';
+  info.indent = info.indent || '    ';
 
-  result = code.substr(0, info.injectImportPosition);
+  result = code.substr(0, info.injectImportsAt);
   importStatements.forEach(x => result += '\n' + x);
-  result += code.substr(info.injectImportPosition, info.injectStartSdkPosition - info.injectImportPosition);
-  startSdkStatements.forEach(x => result += '\n' + info.onCreateTabs + x);
-  result += code.substr(info.injectStartSdkPosition);
+  result += code.substr(info.injectImportsAt, info.injectStartSdkAt - info.injectImportsAt).replace(/^\s*/, '\n\n');
+  startSdkStatements.forEach(x => result += '\n' + info.indent + info.indent + x);
+  result += code.substr(info.injectStartSdkAt).replace(/^\s*/, '\n' + info.indent);
+  console.log(result);
   return result;
 }
 
@@ -40,7 +43,7 @@ function analyzeCode(code: string): InjectBag {
   textWalker.addTrap(
     tw =>
       !tw.bag.mlComment &&
-      tw.prevChar !== '/' && 
+      !tw.bag.quotes &&
       tw.currentChar === '/' && 
       tw.nextChar === '/', 
     tw => 
@@ -58,6 +61,7 @@ function analyzeCode(code: string): InjectBag {
   textWalker.addTrap(
     tw =>
       !tw.bag.slComment &&
+      !tw.bag.quotes &&
       tw.currentChar === '/' && 
       tw.nextChar === '*', 
     tw => 
@@ -90,58 +94,54 @@ function analyzeCode(code: string): InjectBag {
       tw.bag.quotes = null
   );
 
-  //last import statement
+  //class definition
   textWalker.addTrap(
-    tw => true,
+    tw => 
+      tw.bag.relevant &&
+      tw.bag.blockLevel === 1 &&
+      tw.currentChar === '{',
     tw => {
-      let matches = /^import\s+[^]+?;/.exec(tw.front);
-      if (tw.bag.relevant && tw.currentChar === 'i' && matches && matches[0])
-        tw.bag.injectImportPosition = tw.back.length + matches[0].length;
+      let matches = /\s*public\s+class\s+\w+\s+extends\s+AppCompatActivity\s*$/.exec(tw.back);
+      if (matches && matches[0]) {
+        tw.bag.injectImportsAt = matches.index;
+        tw.bag.isWithinClass = true;
+      }
     }
   );
+  textWalker.addTrap(
+    tw => 
+      tw.bag.relevant &&
+      tw.bag.blockLevel === 0 &&
+      tw.bag.isWithinClass &&
+      tw.currentChar === '}',
+    tw => tw.bag.isWithinClass = false
+  );
 
-  //onCreate method
+  //onCreate method definition
   textWalker.addTrap(
     tw =>
       tw.bag.relevant &&
-      tw.prevChar === '{' &&
+      tw.bag.isWithinClass &&
       tw.bag.blockLevel === 2 && 
-      /void\s+onCreate\s*\(\s*Bundle\s+\w+\s*\)\s*{$/.test(tw.back),
-    tw => 
-      tw.bag.onCreateMethod = true
-  );
-  textWalker.addTrap(
-    tw =>
-      tw.bag.relevant &&
-      tw.prevChar === '}' &&
-      tw.bag.blockLevel === 1 && 
-      tw.bag.onCreateMethod,
-    tw => 
-      tw.bag.onCreateMethod = false
-  );
-
-  //onCreate tab size
-  textWalker.addTrap(
-    tw =>
-      tw.bag.relevant &&
-      tw.bag.onCreateMethod &&
-      tw.prevChar === '\n' &&
-      !tw.bag.onCreateTabs,
+      tw.currentChar === '{',
     tw => {
-      let matches = /(?!(^[\t| ]*}))(?!(^[\t| ]*\n))(^[\t| ]*)/.exec(tw.front);
-      tw.bag.onCreateTabs = matches ? matches[0] : null;
+      let matches = /^([ \t]+)@Override\s+protected\s+void\s+onCreate\s*\(\s*Bundle\s+\w+\s*\)\s*$/m.exec(tw.back)
+      if (matches) {
+        tw.bag.isWithinMethod = true;
+        tw.bag.indent = matches[1];
+      }
     }
   );
-
-  //position for MobileCenter.start call
   textWalker.addTrap(
-    tw =>
+    tw => 
       tw.bag.relevant &&
-      tw.bag.onCreateMethod &&
+      tw.bag.blockLevel === 1 &&
+      tw.bag.isWithinMethod &&
       tw.currentChar === '}',
     tw => {
       let matches = /\s*$/.exec(tw.back);
-      tw.bag.injectStartSdkPosition = matches ? matches.index : null;
+      tw.bag.injectStartSdkAt = matches ? matches.index : tw.position;
+      tw.bag.isWithinMethod = false;
     }
   );
 
@@ -157,9 +157,11 @@ class InjectBag {
   quotes: string = null;
   quotesPosition: number;
   get relevant(): boolean { return !this.slComment && !this.mlComment && !this.quotes; }
-  onCreateMethod: boolean;
 
-  injectImportPosition: number;
-  injectStartSdkPosition: number;
-  onCreateTabs: string;
+  isWithinClass: boolean;
+  isWithinMethod: boolean;
+
+  indent: string;
+  injectImportsAt: number;
+  injectStartSdkAt: number;
 }

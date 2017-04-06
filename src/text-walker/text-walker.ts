@@ -57,4 +57,8 @@ export class TextWalker<TBag> {
   get nextChar(): string {
     return this.text.substr(this._position + 1, 1);
   }
+
+  prevChars(num: number): string {
+    return this.text.substr(this._position - num, num);
+  }
 }
