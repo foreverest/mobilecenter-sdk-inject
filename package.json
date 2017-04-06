@@ -1,25 +1,25 @@
 {
-  "name": "text-walker",
-  "version": "1.0.0",
-  "description": "",
-  "scripts": {
-    "test": "mocha ./js/test/**/*.test.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/foreverest/text-walker.git"
-  },
-  "author": "Dmitry Zabello",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/foreverest/text-walker/issues"
-  },
-  "homepage": "https://github.com/foreverest/text-walker#readme",
-  "dependencies": {
-    "@types/node": "^7.0.12",
-    "typescript": "^2.2.2"
-  },
-  "devDependencies": {
-    "mocha": "^3.2.0"
-  }
+    "name": "text-walker",
+    "version": "1.0.0",
+    "description": "",
+    "scripts": {
+        "test": "mocha ./js/test/**/*.test.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/foreverest/text-walker.git"
+    },
+    "author": "Dmitry Zabello",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/foreverest/text-walker/issues"
+    },
+    "homepage": "https://github.com/foreverest/text-walker#readme",
+    "dependencies": {
+        "@types/node": "^7.0.12",
+        "typescript": "^2.2.2"
+    },
+    "devDependencies": {
+        "mocha": "^3.2.0"
+    }
 }
