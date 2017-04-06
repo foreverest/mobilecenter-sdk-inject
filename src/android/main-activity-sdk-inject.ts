@@ -24,58 +24,56 @@ function analyzeCode(code: string): InjectBag {
 
   //class definition
   textWalker.addTrap(
-    tw =>
-      tw.bag.relevant &&
-      tw.bag.blockLevel === 1 &&
-      tw.currentChar === '{',
-    tw => {
-      let matches = /\s*public\s+class\s+\w+\s+extends\s+AppCompatActivity\s*$/.exec(tw.backpart);
+    bag =>
+      bag.relevant &&
+      bag.blockLevel === 1 &&
+      textWalker.currentChar === '{',
+    bag => {
+      let matches = /\s*public\s+class\s+\w+\s+extends\s+AppCompatActivity\s*$/.exec(textWalker.backpart);
       if (matches && matches[0]) {
-        tw.bag.injectImportsAt = matches.index;
-        tw.bag.isWithinClass = true;
+        bag.injectImportsAt = matches.index;
+        bag.isWithinClass = true;
       }
     }
   );
   textWalker.addTrap(
-    tw =>
-      tw.bag.relevant &&
-      tw.bag.blockLevel === 0 &&
-      tw.bag.isWithinClass &&
-      tw.currentChar === '}',
-    tw => tw.bag.isWithinClass = false
+    bag =>
+      bag.relevant &&
+      bag.blockLevel === 0 &&
+      bag.isWithinClass &&
+      textWalker.currentChar === '}',
+    bag => bag.isWithinClass = false
   );
 
   //onCreate method definition
   textWalker.addTrap(
-    tw =>
-      tw.bag.relevant &&
-      tw.bag.isWithinClass &&
-      tw.bag.blockLevel === 2 &&
-      tw.currentChar === '{',
-    tw => {
-      let matches = /^([ \t]+)@Override\s+protected\s+void\s+onCreate\s*\(\s*Bundle\s+\w+\s*\)\s*$/m.exec(tw.backpart)
+    bag =>
+      bag.relevant &&
+      bag.isWithinClass &&
+      bag.blockLevel === 2 &&
+      textWalker.currentChar === '{',
+    bag => {
+      let matches = /^([ \t]+)@Override\s+protected\s+void\s+onCreate\s*\(\s*Bundle\s+\w+\s*\)\s*$/m.exec(textWalker.backpart)
       if (matches) {
-        tw.bag.isWithinMethod = true;
-        tw.bag.indent = matches[1];
+        bag.isWithinMethod = true;
+        bag.indent = matches[1];
       }
     }
   );
   textWalker.addTrap(
-    tw =>
-      tw.bag.relevant &&
-      tw.bag.blockLevel === 1 &&
-      tw.bag.isWithinMethod &&
-      tw.currentChar === '}',
-    tw => {
-      let matches = /\s*$/.exec(tw.backpart);
-      tw.bag.injectStartSdkAt = matches ? matches.index : tw.position;
-      tw.bag.isWithinMethod = false;
+    bag =>
+      bag.relevant &&
+      bag.blockLevel === 1 &&
+      bag.isWithinMethod &&
+      textWalker.currentChar === '}',
+    bag => {
+      let matches = /\s*$/.exec(textWalker.backpart);
+      bag.injectStartSdkAt = matches ? matches.index : textWalker.position;
+      bag.isWithinMethod = false;
     }
   );
-
-  textWalker.walk();
-
-  return textWalker.bag;
+  
+  return textWalker.walk();
 }
 
 class InjectBag extends StandardBag {

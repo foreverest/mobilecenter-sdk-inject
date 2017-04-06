@@ -10,18 +10,18 @@ const importStatements = [
     'import com.microsoft.azure.mobile.analytics.Analytics;',
     'import com.microsoft.azure.mobile.crashes.Crashes;',
     'import com.microsoft.azure.mobile.distribute.Distribute;',
-  ];
+];
 
-  const startSdkStatements = [
+const startSdkStatements = [
     `MobileCenter.start(getApplication(), "${appSecret}",`,
     '        Analytics.class, Crashes.class, Distribute.class);'
-  ];
+];
 
 var dir = __dirname + '/../../../src/test/android/code-files/';
 var files = fs.readdirSync(dir);
 var codes = files
     .filter(x => x.substr(-14) === '.original.java')
-    .map(original_name => {        
+    .map(original_name => {
         let name = original_name.substr(0, original_name.length - 14);
         let expected_name = name + '.expected.java';
         console.log(dir, original_name, name, expected_name);
@@ -39,15 +39,15 @@ function normalize(text: string): string {
     return text;
 }
 
-describe('Main activity', function() {
-  describe('Inject SDK', function() {
-    codes.forEach(function(code) {
-      it(`should correctly inject SDK in code '${code.name}'`, function() {
-        var result = mainActivitySdkInject(code.original, importStatements, startSdkStatements);
-        assert.equal(normalize(result), normalize(code.expected));
-      });
+describe('Main activity', function () {
+    describe('Inject SDK', function () {
+        codes.forEach(function (code) {
+            it(`should correctly inject SDK in code '${code.name}'`, function () {
+                var result = mainActivitySdkInject(code.original, importStatements, startSdkStatements);
+                assert.equal(normalize(result), normalize(code.expected));
+            });
+        });
     });
-  });
 });
 
 

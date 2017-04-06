@@ -7,73 +7,73 @@ export class StandardCodeWalker<TBag extends StandardBag> extends TextWalker<TBa
 
     //block levels
     this.addTrap(
-      tw =>
-        tw.bag.relevant &&
-        tw.currentChar === '{',
-      tw =>
-        tw.bag.blockLevel++
+      bag =>
+        bag.relevant &&
+        this.currentChar === '{',
+      bag =>
+        bag.blockLevel++
     );
     this.addTrap(
-      tw =>
-        tw.bag.relevant &&
-        tw.currentChar === '}',
-      tw =>
-        tw.bag.blockLevel--
+      bag =>
+        bag.relevant &&
+        this.currentChar === '}',
+      bag =>
+        bag.blockLevel--
     );
 
     //single-line comments
     this.addTrap(
-      tw =>
-        !tw.bag.mlComment &&
-        !tw.bag.quotes &&
-        tw.currentChar === '/' &&
-        tw.nextChar === '/',
-      tw =>
-        tw.bag.slComment = true
+      bag =>
+        !bag.mlComment &&
+        !bag.quotes &&
+        this.currentChar === '/' &&
+        this.nextChar === '/',
+      bag =>
+        bag.slComment = true
     );
     this.addTrap(
-      tw =>
-        tw.bag.slComment &&
-        tw.prevChar === '\n',
-      tw =>
-        tw.bag.slComment = false
+      bag =>
+        bag.slComment &&
+        this.prevChar === '\n',
+      bag =>
+        bag.slComment = false
     );
 
     //multi-line comments
     this.addTrap(
-      tw =>
-        !tw.bag.slComment &&
-        !tw.bag.quotes &&
-        tw.currentChar === '/' &&
-        tw.nextChar === '*',
-      tw =>
-        tw.bag.mlComment = true
+      bag =>
+        !bag.slComment &&
+        !bag.quotes &&
+        this.currentChar === '/' &&
+        this.nextChar === '*',
+      bag =>
+        bag.mlComment = true
     );
     this.addTrap(
-      tw =>
-        tw.bag.mlComment &&
-        tw.currentChar === '*' &&
-        tw.nextChar === '/',
-      tw =>
-        tw.bag.mlComment = false
+      bag =>
+        bag.mlComment &&
+        this.currentChar === '*' &&
+        this.nextChar === '/',
+      bag =>
+        bag.mlComment = false
     );
 
     //quotes
     this.addTrap(
-      tw =>
-        tw.bag.relevant &&
-        (tw.currentChar === '\'' || tw.currentChar === '\"'),
-      tw => {
-        tw.bag.quotes = tw.currentChar
-        tw.bag.quotesPosition = tw.position;
+      bag =>
+        bag.relevant &&
+        (this.currentChar === '\'' || this.currentChar === '\"'),
+      bag => {
+        bag.quotes = this.currentChar
+        bag.quotesPosition = this.position;
       }
     );
     this.addTrap(
-      tw =>
-        tw.currentChar === tw.bag.quotes &&
-        tw.bag.quotesPosition !== tw.position,
-      tw =>
-        tw.bag.quotes = null
+      bag =>
+        this.currentChar === bag.quotes &&
+        bag.quotesPosition !== this.position,
+      bag =>
+        bag.quotes = null
     );
   }
 }
