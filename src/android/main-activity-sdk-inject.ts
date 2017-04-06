@@ -30,7 +30,7 @@ function analyzeCode(code: string): InjectBag {
             bag.blockLevel === 1 &&
             textWalker.currentChar === '{',
         bag => {
-            let matches = /\s*public\s+class\s+\w+\s+extends\s+AppCompatActivity\s*$/.exec(textWalker.backpart);
+            let matches = /\s*public\s+class\s+\w+\s+extends\s+\w+Activity\s*$/.exec(textWalker.backpart);
             if (matches && matches[0]) {
                 bag.injectImportsAt = matches.index;
                 bag.isWithinClass = true;
