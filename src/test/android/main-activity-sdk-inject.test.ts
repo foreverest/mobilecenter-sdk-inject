@@ -53,7 +53,7 @@ describe('Main activity', function () {
     });
     describe('Inject SDK negatives', function () {
         incorrectCodes.forEach(function (code) {
-            it(`should throw error in the '${code.name}'`, function () {
+            it(`should throw an error in the '${code.name}'`, function () {
                 assert.throws(() => (mainActivitySdkInject(code.text, importStatements, startSdkStatements)));
             });
         });
