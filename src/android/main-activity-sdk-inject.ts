@@ -25,7 +25,7 @@ function analyzeCode(code: string): InjectBag {
   //class definition
   textWalker.addTrap(
     bag =>
-      bag.relevant &&
+      bag.significant &&
       bag.blockLevel === 1 &&
       textWalker.currentChar === '{',
     bag => {
@@ -38,7 +38,7 @@ function analyzeCode(code: string): InjectBag {
   );
   textWalker.addTrap(
     bag =>
-      bag.relevant &&
+      bag.significant &&
       bag.blockLevel === 0 &&
       bag.isWithinClass &&
       textWalker.currentChar === '}',
@@ -48,7 +48,7 @@ function analyzeCode(code: string): InjectBag {
   //onCreate method definition
   textWalker.addTrap(
     bag =>
-      bag.relevant &&
+      bag.significant &&
       bag.isWithinClass &&
       bag.blockLevel === 2 &&
       textWalker.currentChar === '{',
@@ -62,7 +62,7 @@ function analyzeCode(code: string): InjectBag {
   );
   textWalker.addTrap(
     bag =>
-      bag.relevant &&
+      bag.significant &&
       bag.blockLevel === 1 &&
       bag.isWithinMethod &&
       textWalker.currentChar === '}',

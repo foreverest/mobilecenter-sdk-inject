@@ -17,14 +17,13 @@ const startSdkStatements = [
     '        Analytics.class, Crashes.class, Distribute.class);'
 ];
 
-var dir = __dirname + '/../../../src/test/android/code-files/';
-var files = fs.readdirSync(dir);
-var codes = files
+const dir = __dirname + '/../../../src/test/android/code-files/';
+let files = fs.readdirSync(dir);
+let codes = files
     .filter(x => x.substr(-14) === '.original.java')
     .map(original_name => {
         let name = original_name.substr(0, original_name.length - 14);
         let expected_name = name + '.expected.java';
-        console.log(dir, original_name, name, expected_name);
         return !fs.existsSync(dir + expected_name) ? null : {
             name,
             original: fs.readFileSync(dir + original_name, 'utf8'),

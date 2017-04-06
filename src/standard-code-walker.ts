@@ -8,14 +8,14 @@ export class StandardCodeWalker<TBag extends StandardBag> extends TextWalker<TBa
     //block levels
     this.addTrap(
       bag =>
-        bag.relevant &&
+        bag.significant &&
         this.currentChar === '{',
       bag =>
         bag.blockLevel++
     );
     this.addTrap(
       bag =>
-        bag.relevant &&
+        bag.significant &&
         this.currentChar === '}',
       bag =>
         bag.blockLevel--
@@ -61,7 +61,7 @@ export class StandardCodeWalker<TBag extends StandardBag> extends TextWalker<TBa
     //quotes
     this.addTrap(
       bag =>
-        bag.relevant &&
+        bag.significant &&
         (this.currentChar === '\'' || this.currentChar === '\"'),
       bag => {
         bag.quotes = this.currentChar
@@ -84,5 +84,8 @@ export class StandardBag {
   mlComment: boolean = false;
   quotes: string = null;
   quotesPosition: number;
-  get relevant(): boolean { return !this.slComment && !this.mlComment && !this.quotes; }
+  
+  get significant(): boolean { 
+    return !this.slComment && !this.mlComment && !this.quotes; 
+  }
 }
