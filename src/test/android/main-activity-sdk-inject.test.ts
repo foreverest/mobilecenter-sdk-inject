@@ -17,9 +17,9 @@ const startSdkStatements = [
     '        Analytics.class, Crashes.class, Distribute.class);'
 ];
 
-const dir = __dirname + '/../../../src/test/android/code-files/';
+const dir = __dirname + '/../../../src/test/android/examples/';
 let files = fs.readdirSync(dir);
-let correctCodes = files
+let correctExamples = files
     .filter(x => x.substr(-14) === '.original.java')
     .map(original_name => {
         let name = original_name.substr(0, original_name.length - 14);
@@ -32,9 +32,9 @@ let correctCodes = files
     })
     .filter(x => x);
 
-let incorrectCodes = files
+let incorrectExamples = files
     .filter(x => x.substr(0, 9) === 'incorrect')
-    .map(name => ({ name, text: fs.readFileSync(dir + name, 'utf8') }));
+    .map(name => ({ name, code: fs.readFileSync(dir + name, 'utf8') }));
 
 function normalize(text: string): string {
     while (~text.indexOf('\r\n'))
@@ -44,17 +44,17 @@ function normalize(text: string): string {
 
 describe('Main activity', function () {
     describe('Inject SDK positives', function () {
-        correctCodes.forEach(function (code) {
-            it(`should correctly inject SDK in the '${code.name}'`, function () {
-                var result = mainActivitySdkInject(code.original, importStatements, startSdkStatements);
-                assert.equal(normalize(result), normalize(code.expected));
+        correctExamples.forEach(function (example) {
+            it(`should correctly inject SDK in the '${example.name}'`, function () {
+                var result = mainActivitySdkInject(example.original, importStatements, startSdkStatements);
+                assert.equal(normalize(result), normalize(example.expected));
             });
         });
     });
     describe('Inject SDK negatives', function () {
-        incorrectCodes.forEach(function (code) {
-            it(`should throw an error in the '${code.name}'`, function () {
-                assert.throws(() => (mainActivitySdkInject(code.text, importStatements, startSdkStatements)));
+        incorrectExamples.forEach(function (example) {
+            it(`should throw an error in the '${example.name}'`, function () {
+                assert.throws(() => (mainActivitySdkInject(example.code, importStatements, startSdkStatements)));
             });
         });
     });
