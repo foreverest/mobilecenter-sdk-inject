@@ -1,4 +1,4 @@
-import { mainActivitySdkInject } from "../../android/main-activity-sdk-inject";
+import { injectSdkMainActivity } from "../../android/inject-sdk-main-activity";
 
 import * as assert from 'assert';
 import * as fs from 'fs';
@@ -46,7 +46,7 @@ describe('Main activity', function () {
     describe('Inject SDK positives', function () {
         correctExamples.forEach(function (example) {
             it(`should correctly inject SDK in the '${example.name}'`, function () {
-                var result = mainActivitySdkInject(example.original, importStatements, startSdkStatements);
+                var result = injectSdkMainActivity(example.original, 'MainActivity', importStatements, startSdkStatements);
                 assert.equal(normalize(result), normalize(example.expected));
             });
         });
@@ -54,7 +54,7 @@ describe('Main activity', function () {
     describe('Inject SDK negatives', function () {
         incorrectExamples.forEach(function (example) {
             it(`should throw an error in the '${example.name}'`, function () {
-                assert.throws(() => (mainActivitySdkInject(example.code, importStatements, startSdkStatements)));
+                assert.throws(() => (injectSdkMainActivity(example.code, 'MainActivity', importStatements, startSdkStatements)));
             });
         });
     });

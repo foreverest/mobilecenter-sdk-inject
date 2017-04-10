@@ -1,9 +1,9 @@
 import { StandardCodeWalker, StandardBag } from './../standard-code-walker';
 import { TextWalker } from './../text-walker/text-walker';
 
-export function mainActivitySdkInject(code: string, importStatements: string[], startSdkStatements: string[]): string {
+export function injectSdkMainActivity(code: string, activityName: string, importStatements: string[], startSdkStatements: string[]): string {
     let result: string;
-    let info = analyzeCode(code);
+    let info = analyzeCode(code, activityName);
 
     if (info.injectImportsAt == undefined || info.injectStartSdkAt == undefined)
         throw new Error("Cannot find appropriate positions for MobileCenter SDK integration.");
@@ -18,7 +18,7 @@ export function mainActivitySdkInject(code: string, importStatements: string[], 
     return result;
 }
 
-function analyzeCode(code: string): InjectBag {
+function analyzeCode(code: string, activityName: string): InjectBag {
 
     let injectBag = new InjectBag();
     let textWalker = new StandardCodeWalker<InjectBag>(code, injectBag);
@@ -30,7 +30,7 @@ function analyzeCode(code: string): InjectBag {
             bag.blockLevel === 1 &&
             textWalker.currentChar === '{',
         bag => {
-            let matches = /\s*public\s+class\s+\w+\s+extends\s+(AppCompat)?Activity\s*$/.exec(textWalker.backpart);
+            let matches = textWalker.backpart.match(`\\s*public\\s+class\\s+${activityName}\\s+extends\\s+(AppCompat)?Activity\\s*$`);
             if (matches && matches[0]) {
                 bag.injectImportsAt = matches.index;
                 bag.isWithinClass = true;
