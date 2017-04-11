@@ -1,5 +1,5 @@
 {
-  "name": "mobilecenter-sdk-injector",
+  "name": "mobilecenter-sdk-inject",
   "version": "1.0.0",
   "description": "",
   "scripts": {
@@ -7,14 +7,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/foreverest/text-walker.git"
+    "url": "git+https://github.com/foreverest/mobilecenter-sdk-inject.git"
   },
   "author": "Dmitry Zabello",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/foreverest/text-walker/issues"
+    "url": "https://github.com/foreverest/mobilecenter-sdk-inject/issues"
   },
-  "homepage": "https://github.com/foreverest/text-walker#readme",
+  "homepage": "https://github.com/foreverest/mobilecenter-sdk-inject#readme",
   "dependencies": {
     "@types/lodash": "^4.14.62",
     "@types/node": "^7.0.12",
