@@ -62,7 +62,7 @@ if (errors.length) {
 
 function logHelp() {
     console.log('\nUsage:');
-    console.log('\tnode inject-sdk.js <keys>');
+    console.log('\tnode mobilecenter-sdk-inject.js <keys>');
     console.log('\nKeys:');
     console.log('\t-p: The following argument must be <projectPath>');
     console.log('\t-m: The following argument must be <moduleName>');
@@ -72,7 +72,7 @@ function logHelp() {
     console.log('\t--crashes: Includes Mobile Center SDK Crashes module');
     console.log('\t--distribute: Includes Mobile Center SDK Distribute module');
     console.log('\nExample:');
-    console.log('\tnode inject-sdk.js -p d:/android/projects/HelloAndroid -m app -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes');
+    console.log('\tnode mobilecenter-sdk-inject.js -p d:/android/projects/HelloAndroid -m app -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes');
 }
 
 function logError(err) {
