@@ -2,14 +2,19 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as xml2js from 'xml2js'
 import { injectSdkMainActivity } from "./inject-sdk-main-activity";
+import { injectSdkBuildGradle } from "./inject-sdk-build-gradle";
 //import * as _ from 'lodash'
 
 export function injectSdkAndroid(projectPath: string, moduleName: string): Promise<void> {
-    return collectModuleInfo(projectPath, moduleName)
-        .then(function(moduleInfo: IAndroidModuleInfo) {
+    return Promise.resolve({ projectPath, moduleName })
+        .then(readBuildGradle)
+        .then(readManifest)
+        .then(selectMainActivity)
+        .then(readMainActivity)
+        .then(function (moduleInfo: IAndroidModuleInfo) {
             return injectBuildGradle(moduleInfo);
         })
-        .then(function(moduleInfo: IAndroidModuleInfo) {
+        .then(function (moduleInfo: IAndroidModuleInfo) {
             return injectMainActivity(moduleInfo);
         })
         .then(saveChanges)
@@ -18,23 +23,13 @@ export function injectSdkAndroid(projectPath: string, moduleName: string): Promi
         });
 }
 
-function collectModuleInfo(projectPath: string, moduleName: string): Promise<IAndroidModuleInfo> {
-    let moduleInfo: IAndroidModuleInfo = { projectPath, moduleName };
-
-    return Promise.resolve(moduleInfo)
-        .then(readBuildGradle)
-        .then(readManifest)
-        .then(selectMainActivity)
-        .then(readMainActivity)
-}
-
 function readBuildGradle(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
     return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
         moduleInfo.buildGradlePath = path.join(moduleInfo.projectPath, moduleInfo.moduleName, 'build.gradle');
 
         fs.exists(moduleInfo.buildGradlePath, function (exists: boolean) {
             if (!exists)
-                reject(new Error('The module\'s manifest file not found.'));
+                reject(new Error('The module\'s build.gradle file not found.'));
 
             fs.readFile(moduleInfo.buildGradlePath, 'utf8', function (err, data: string) {
                 if (err)
@@ -54,7 +49,7 @@ function readManifest(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInf
             if (!exists)
                 reject(new Error('The module\'s build.gradle file not found.'));
 
-            fs.readFile(moduleInfo.manifestPath, 'utf8', function (err, data: string) {
+            fs.readFile(moduleInfo.manifestPath, 'utf8', function (err: NodeJS.ErrnoException, data: string) {
                 if (err)
                     reject(err);
                 moduleInfo.manifestContents = data;
@@ -124,7 +119,22 @@ function readMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModul
 
 function injectBuildGradle(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
     return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
-        resolve(moduleInfo);
+        
+        const lines = [
+            'dependencies {',
+            '    def mobileCenterSdkVersion = \'0.6.1\'',
+            '    compile "com.microsoft.azure.mobile:mobile-center-analytics:${mobileCenterSdkVersion}"',
+            '    compile "com.microsoft.azure.mobile:mobile-center-crashes:${mobileCenterSdkVersion}"',
+            '    compile "com.microsoft.azure.mobile:mobile-center-distribute:${mobileCenterSdkVersion}"',
+            '}'
+        ];
+        
+        try {
+            moduleInfo.buildGradleContents = injectSdkBuildGradle(moduleInfo.buildGradleContents, lines);
+            resolve(moduleInfo);
+        } catch (err) {
+            reject(err);
+        }
     });
 }
 
@@ -152,11 +162,35 @@ function injectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidMod
 }
 
 function saveChanges(moduleInfo: IAndroidModuleInfo): Promise<void> {
-    return new Promise<void>(function (resolve, reject) {
-        console.log(moduleInfo.mainActivityContents);
-        
-        resolve();
-    });
+    return Promise.resolve()
+        .then(() => new Promise(function (resolve, reject){
+            fs.rename(moduleInfo.buildGradlePath, moduleInfo.buildGradlePath + '.orig', function(err) {
+                if (err)
+                    reject(err);
+                resolve();
+            });
+        }))
+        .then(() => new Promise(function (resolve, reject){
+            fs.writeFile(moduleInfo.buildGradlePath, moduleInfo.buildGradleContents, function(err) {
+                if (err)
+                    reject(err);
+                resolve();
+            });
+        }))
+        .then(() => new Promise(function (resolve, reject){
+            fs.rename(moduleInfo.mainActivityPath, moduleInfo.mainActivityPath + '.orig', function(err) {
+                if (err)
+                    reject(err);
+                resolve();
+            });
+        }))
+        .then(() => new Promise(function (resolve, reject){
+            fs.writeFile(moduleInfo.mainActivityPath, moduleInfo.mainActivityContents, function(err) {
+                if (err)
+                    reject(err);
+                resolve();
+            });
+        }));
 }
 
 interface IAndroidModuleInfo {

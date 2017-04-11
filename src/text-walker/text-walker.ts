@@ -11,6 +11,8 @@ export class TextWalker<TBag> {
 
     private _traps: TextWalkerTrap<TBag>[] = [];
 
+    private _isStoped: boolean = false;
+
     constructor(text: string, bag: TBag) {
         this._text = text;
         this._bag = bag;
@@ -37,21 +39,25 @@ export class TextWalker<TBag> {
     }
 
     walk() {
-        while (this.step());
+        while (!this._isStoped && this.step());
         return this._bag;
     }
 
+    stop() {
+        this._isStoped = true;
+    }
+
     step(): boolean {
-        this._position++;
         if (this._position >= this.text.length)
             return false;
         this.handleTraps();
+        this._position++;
         return true;
     }
 
     private handleTraps() {
         this._traps.forEach(trap => {
-            if (trap.condition(this._bag)) {
+            if (!this._isStoped && trap.condition(this._bag)) {
                 trap.handler(this._bag);
             }
         });

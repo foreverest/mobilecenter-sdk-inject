@@ -1,5 +1,4 @@
 import { StandardCodeWalker, StandardBag } from './../standard-code-walker';
-import { TextWalker } from './../text-walker/text-walker';
 
 export function injectSdkMainActivity(code: string, activityName: string, importStatements: string[], startSdkStatements: string[]): string {
     let result: string;
