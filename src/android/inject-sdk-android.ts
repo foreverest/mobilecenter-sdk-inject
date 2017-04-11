@@ -3,19 +3,25 @@ import * as path from 'path';
 import * as xml2js from 'xml2js'
 import { injectSdkMainActivity } from "./inject-sdk-main-activity";
 import { injectSdkBuildGradle } from "./inject-sdk-build-gradle";
+import { MobileCenterSdkModule } from "../mobilecenter-sdk-module";
 //import * as _ from 'lodash'
 
-export function injectSdkAndroid(projectPath: string, moduleName: string): Promise<void> {
+export function injectSdkAndroid(projectPath: string, moduleName: string, 
+    sdkVersion: string, appSecret: string, sdkModules: MobileCenterSdkModule): Promise<void> {
+    
+    if (!projectPath || !moduleName || !sdkVersion || !appSecret || !sdkModules)
+        return Promise.reject(new Error("Invalid arguments."));
+
     return Promise.resolve({ projectPath, moduleName })
         .then(readBuildGradle)
         .then(readManifest)
         .then(selectMainActivity)
         .then(readMainActivity)
         .then(function (moduleInfo: IAndroidModuleInfo) {
-            return injectBuildGradle(moduleInfo);
+            return injectBuildGradle(moduleInfo, sdkVersion, sdkModules);
         })
         .then(function (moduleInfo: IAndroidModuleInfo) {
-            return injectMainActivity(moduleInfo);
+            return injectMainActivity(moduleInfo, appSecret, sdkModules);
         })
         .then(saveChanges)
         .catch(function (err) {
@@ -117,17 +123,18 @@ function readMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModul
     });
 }
 
-function injectBuildGradle(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
+function injectBuildGradle(moduleInfo: IAndroidModuleInfo, sdkVersion: string, sdkModules: MobileCenterSdkModule): Promise<IAndroidModuleInfo> {
     return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
-        
-        const lines = [
-            'dependencies {',
-            '    def mobileCenterSdkVersion = \'0.6.1\'',
-            '    compile "com.microsoft.azure.mobile:mobile-center-analytics:${mobileCenterSdkVersion}"',
-            '    compile "com.microsoft.azure.mobile:mobile-center-crashes:${mobileCenterSdkVersion}"',
-            '    compile "com.microsoft.azure.mobile:mobile-center-distribute:${mobileCenterSdkVersion}"',
-            '}'
-        ];
+        let lines: string[] = [];
+        lines.push('dependencies {');
+        lines.push(`    def mobileCenterSdkVersion = '${sdkVersion}'`);
+        if (sdkModules & MobileCenterSdkModule.Analytics)
+            lines.push('    compile "com.microsoft.azure.mobile:mobile-center-analytics:${mobileCenterSdkVersion}"');
+        if (sdkModules & MobileCenterSdkModule.Crashes)
+            lines.push('    compile "com.microsoft.azure.mobile:mobile-center-crashes:${mobileCenterSdkVersion}"');
+        if (sdkModules & MobileCenterSdkModule.Distribute)
+            lines.push('    compile "com.microsoft.azure.mobile:mobile-center-distribute:${mobileCenterSdkVersion}"');
+        lines.push('}');
         
         try {
             moduleInfo.buildGradleContents = injectSdkBuildGradle(moduleInfo.buildGradleContents, lines);
@@ -138,19 +145,30 @@ function injectBuildGradle(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModu
     });
 }
 
-function injectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
+function injectMainActivity(moduleInfo: IAndroidModuleInfo, appSecret: string, sdkModules: MobileCenterSdkModule): Promise<IAndroidModuleInfo> {
     return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
-        const appSecret = '00000000-0000-0000-0000-000000000000';
-        const importStatements = [
-            'import com.microsoft.azure.mobile.MobileCenter;',
-            'import com.microsoft.azure.mobile.analytics.Analytics;',
-            'import com.microsoft.azure.mobile.crashes.Crashes;',
-            'import com.microsoft.azure.mobile.distribute.Distribute;',
-        ];
-        const startSdkStatements = [
-            `MobileCenter.start(getApplication(), "${appSecret}",`,
-            '        Analytics.class, Crashes.class, Distribute.class);'
-        ];
+        
+        let importStatements: string[] = [];
+        let sdkModulesList: string[] = [];
+        
+        importStatements.push('import com.microsoft.azure.mobile.MobileCenter;');
+        if (sdkModules & MobileCenterSdkModule.Analytics) {
+            importStatements.push('import com.microsoft.azure.mobile.analytics.Analytics;');
+            sdkModulesList.push('Analytics.class');
+        }
+        if (sdkModules & MobileCenterSdkModule.Crashes) {
+            importStatements.push('import com.microsoft.azure.mobile.crashes.Crashes;');
+            sdkModulesList.push('Crashes.class');
+        }
+        if (sdkModules & MobileCenterSdkModule.Distribute) {
+            importStatements.push('import com.microsoft.azure.mobile.distribute.Distribute;');
+            sdkModulesList.push('Distribute.class');
+        }
+        
+        let startSdkStatements: string[] = [];
+        startSdkStatements.push(`MobileCenter.start(getApplication(), "${appSecret}",`);
+        startSdkStatements.push(`        ${sdkModulesList.join(', ')});`);
+        
         try {
             moduleInfo.mainActivityContents = injectSdkMainActivity(moduleInfo.mainActivityContents,
                 moduleInfo.mainActivityName, importStatements, startSdkStatements);

@@ -1,9 +1,9 @@
 {
-  "name": "text-walker",
+  "name": "mobilecenter-sdk-injector",
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "test": "mocha ./js/test/**/*.test.js"
+    "test": "mocha ./lib/test/**/*.test.js"
   },
   "repository": {
     "type": "git",

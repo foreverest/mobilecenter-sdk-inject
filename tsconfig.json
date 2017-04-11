@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "target": "es5",
-        "outDir": "js/",
+        "outDir": "lib/",
         "sourceMap": true
     }
 }
