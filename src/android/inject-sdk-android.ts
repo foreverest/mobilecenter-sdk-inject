@@ -40,7 +40,7 @@ function readBuildGradle(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModule
 
         fs.exists(moduleInfo.buildGradlePath, function (exists: boolean) {
             if (!exists)
-                reject(new Error('The module\'s build.gradle file not found.'));
+                return reject(new Error('The module\'s build.gradle file not found.'));
 
             fs.readFile(moduleInfo.buildGradlePath, 'utf8', function (err, data: string) {
                 if (err)
@@ -137,32 +137,26 @@ function selectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidMod
             let manifestPath = path.join(moduleInfo.projectPath, moduleInfo.moduleName, sourceSet.manifestSrcFile);
             return new Promise<boolean>(function (resolve, reject) {
                 fs.exists(manifestPath, function (exists: boolean) {
-                    if (!exists) {
-                        resolve(false);
-                        return;
-                    }
+                    if (!exists)
+                        return resolve(false);
+
                     fs.readFile(manifestPath, 'utf8', function (err: NodeJS.ErrnoException, data: string) {
-                        if (err) {
-                            reject(err);
-                            return;
-                        }
+                        if (err)
+                            return reject(err);
+
                         xml2js.parseString(data, function (err, xml) {
 
-                            if (err) {
-                                reject(err);
-                                return;
-                            }
-                            if (!xml || !xml.manifest || !xml.manifest.application || !xml.manifest.application[0]) {
-                                resolve(false);
-                                return;
-                            }
+                            if (err)
+                                return reject(err);
+
+                            if (!xml || !xml.manifest || !xml.manifest.application || !xml.manifest.application[0])
+                                return resolve(false);
+
                             let packageName = xml.manifest.$.package;
                             let application = xml.manifest.application[0];
-                            if (!application.activity || !application.activity.length) {
-                                resolve(false);
-                                return;
-                            }
-                            
+                            if (!application.activity || !application.activity.length)
+                                return resolve(false);
+
                             let mainActivity = _.find<any>(application.activity, x =>
                                 x['intent-filter'] && x['intent-filter'][0] &&
                                 x['intent-filter'][0].action && x['intent-filter'][0].action[0] &&
@@ -170,21 +164,16 @@ function selectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidMod
                                 x['intent-filter'][0].category && x['intent-filter'][0].category[0] &&
                                 x['intent-filter'][0].category[0].$['android:name'] === 'android.intent.category.LAUNCHER'
                             );
-                            if (!mainActivity) {
-                                resolve(false);
-                                return;
-                            }
+                            if (!mainActivity)
+                                return resolve(false);
 
                             let mainActivityFullName = mainActivity.$['android:name'];
-                            if (!mainActivityFullName) {
-                                resolve(false);
-                                return;
-                            }
+                            if (!mainActivityFullName)
+                                return resolve(false);
                             if (mainActivityFullName[0] === '.') {
-                                if (!packageName) {
-                                    reject(new Error('Incorrect manifest file. Package name must be specified.'));
-                                    return;
-                                }
+                                if (!packageName)
+                                    return reject(new Error('Incorrect manifest file. Package name must be specified.'));
+
                                 mainActivityFullName = packageName + mainActivityFullName;
                             }
 
@@ -209,30 +198,31 @@ function selectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidMod
 }
 
 function readMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
-    
-    let promise = Promise.resolve(undefined);
-    for (let sourceSet of moduleInfo.sourceSets.filter(x=>x.javaSrcDirs && x.javaSrcDirs.length)) {
-        for (let javaSrcDir of sourceSet.javaSrcDirs)
-        promise = promise.then(function (isFound: boolean) {
-            if (isFound)
-                return Promise.resolve(true);
-            let mainActivityPath = path.join(moduleInfo.projectPath, moduleInfo.moduleName,
-                javaSrcDir, moduleInfo.mainActivityFullName.replace(/\./g, '/') + '.java');
-            return new Promise<boolean>(function (resolve, reject) {    
-                fs.exists(mainActivityPath, function (exists: boolean) {
-                    if (!exists)
-                        return resolve(false);
 
-                    fs.readFile(mainActivityPath, 'utf8', function (err, data: string) {
-                        if (err)
-                            reject(err);
-                        moduleInfo.mainActivityPath = mainActivityPath;
-                        moduleInfo.mainActivityContents = data;
-                        resolve(true);
+    let promise = Promise.resolve(undefined);
+    for (let sourceSet of moduleInfo.sourceSets.filter(x => x.javaSrcDirs && x.javaSrcDirs.length)) {
+        for (let javaSrcDir of sourceSet.javaSrcDirs)
+            promise = promise.then(function (isFound: boolean) {
+                if (isFound)
+                    return Promise.resolve(true);
+
+                let mainActivityPath = path.join(moduleInfo.projectPath, moduleInfo.moduleName,
+                    javaSrcDir, moduleInfo.mainActivityFullName.replace(/\./g, '/') + '.java');
+                return new Promise<boolean>(function (resolve, reject) {
+                    fs.exists(mainActivityPath, function (exists: boolean) {
+                        if (!exists)
+                            return resolve(false);
+
+                        fs.readFile(mainActivityPath, 'utf8', function (err, data: string) {
+                            if (err)
+                                return reject(err);
+                            moduleInfo.mainActivityPath = mainActivityPath;
+                            moduleInfo.mainActivityContents = data;
+                            resolve(true);
+                        });
                     });
                 });
             });
-        });
     }
 
     return promise.
@@ -244,59 +234,54 @@ function readMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModul
 }
 
 function injectBuildGradle(moduleInfo: IAndroidModuleInfo, sdkVersion: string, sdkModules: MobileCenterSdkModule): Promise<IAndroidModuleInfo> {
-    return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
-        let lines: string[] = [];
-        lines.push('dependencies {');
-        lines.push(`    def mobileCenterSdkVersion = '${sdkVersion}'`);
-        if (sdkModules & MobileCenterSdkModule.Analytics)
-            lines.push('    compile "com.microsoft.azure.mobile:mobile-center-analytics:${mobileCenterSdkVersion}"');
-        if (sdkModules & MobileCenterSdkModule.Crashes)
-            lines.push('    compile "com.microsoft.azure.mobile:mobile-center-crashes:${mobileCenterSdkVersion}"');
-        if (sdkModules & MobileCenterSdkModule.Distribute)
-            lines.push('    compile "com.microsoft.azure.mobile:mobile-center-distribute:${mobileCenterSdkVersion}"');
-        lines.push('}');
+    let lines: string[] = [];
+    lines.push('dependencies {');
+    lines.push(`    def mobileCenterSdkVersion = '${sdkVersion}'`);
+    if (sdkModules & MobileCenterSdkModule.Analytics)
+        lines.push('    compile "com.microsoft.azure.mobile:mobile-center-analytics:${mobileCenterSdkVersion}"');
+    if (sdkModules & MobileCenterSdkModule.Crashes)
+        lines.push('    compile "com.microsoft.azure.mobile:mobile-center-crashes:${mobileCenterSdkVersion}"');
+    if (sdkModules & MobileCenterSdkModule.Distribute)
+        lines.push('    compile "com.microsoft.azure.mobile:mobile-center-distribute:${mobileCenterSdkVersion}"');
+    lines.push('}');
 
-        try {
-            moduleInfo.buildGradleContents = injectSdkBuildGradle(moduleInfo.buildGradleContents, lines);
-            resolve(moduleInfo);
-        } catch (err) {
-            reject(err);
-        }
-    });
+    try {
+        moduleInfo.buildGradleContents = injectSdkBuildGradle(moduleInfo.buildGradleContents, lines);
+    } catch (err) {
+        return Promise.reject(err);
+    }
+    return Promise.resolve(moduleInfo);
 }
 
 function injectMainActivity(moduleInfo: IAndroidModuleInfo, appSecret: string, sdkModules: MobileCenterSdkModule): Promise<IAndroidModuleInfo> {
-    return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
+    let importStatements: string[] = [];
+    let sdkModulesList: string[] = [];
 
-        let importStatements: string[] = [];
-        let sdkModulesList: string[] = [];
+    importStatements.push('import com.microsoft.azure.mobile.MobileCenter;');
+    if (sdkModules & MobileCenterSdkModule.Analytics) {
+        importStatements.push('import com.microsoft.azure.mobile.analytics.Analytics;');
+        sdkModulesList.push('Analytics.class');
+    }
+    if (sdkModules & MobileCenterSdkModule.Crashes) {
+        importStatements.push('import com.microsoft.azure.mobile.crashes.Crashes;');
+        sdkModulesList.push('Crashes.class');
+    }
+    if (sdkModules & MobileCenterSdkModule.Distribute) {
+        importStatements.push('import com.microsoft.azure.mobile.distribute.Distribute;');
+        sdkModulesList.push('Distribute.class');
+    }
 
-        importStatements.push('import com.microsoft.azure.mobile.MobileCenter;');
-        if (sdkModules & MobileCenterSdkModule.Analytics) {
-            importStatements.push('import com.microsoft.azure.mobile.analytics.Analytics;');
-            sdkModulesList.push('Analytics.class');
-        }
-        if (sdkModules & MobileCenterSdkModule.Crashes) {
-            importStatements.push('import com.microsoft.azure.mobile.crashes.Crashes;');
-            sdkModulesList.push('Crashes.class');
-        }
-        if (sdkModules & MobileCenterSdkModule.Distribute) {
-            importStatements.push('import com.microsoft.azure.mobile.distribute.Distribute;');
-            sdkModulesList.push('Distribute.class');
-        }
+    let startSdkStatements: string[] = [];
+    startSdkStatements.push(`MobileCenter.start(getApplication(), "${appSecret}",`);
+    startSdkStatements.push(`        ${sdkModulesList.join(', ')});`);
 
-        let startSdkStatements: string[] = [];
-        startSdkStatements.push(`MobileCenter.start(getApplication(), "${appSecret}",`);
-        startSdkStatements.push(`        ${sdkModulesList.join(', ')});`);
-
-        try {
-            moduleInfo.mainActivityContents = injectSdkMainActivity(moduleInfo.mainActivityContents,
-                moduleInfo.mainActivityName, importStatements, startSdkStatements);
-            resolve(moduleInfo);
-        } catch (err) {
-            reject(err);
-        }
-    });
+    try {
+        moduleInfo.mainActivityContents = injectSdkMainActivity(moduleInfo.mainActivityContents,
+            moduleInfo.mainActivityName, importStatements, startSdkStatements);
+    } catch (err) {
+        return Promise.reject(err);
+    }
+    return Promise.resolve(moduleInfo);
 }
 
 function saveChanges(moduleInfo: IAndroidModuleInfo): Promise<void> {
