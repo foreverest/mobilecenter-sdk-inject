@@ -1,11 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import * as xml2js from 'xml2js'
-import * as gjs from 'gradlejs';
 import { injectSdkMainActivity } from "./inject-sdk-main-activity";
 import { injectSdkBuildGradle } from "./inject-sdk-build-gradle";
 import { MobileCenterSdkModule } from "../mobilecenter-sdk-module";
 import * as _ from 'lodash'
+const xml2js = require('xml2js');
+const gjs = require('gradlejs');
 
 export function injectSdkAndroid(projectPath: string, moduleName: string,
     sdkVersion: string, appSecret: string, sdkModules: MobileCenterSdkModule): Promise<void> {
@@ -129,13 +129,13 @@ function removeQuotes(text: string): string {
 
 function selectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
 
-    let promise = Promise.resolve(false);
+    let promise = Promise.resolve(undefined);
     for (let sourceSet of moduleInfo.sourceSets) {
         promise = promise.then(function (isFound: boolean) {
             if (isFound)
                 return Promise.resolve(true);
             let manifestPath = path.join(moduleInfo.projectPath, moduleInfo.moduleName, sourceSet.manifestSrcFile);
-            return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
+            return new Promise<boolean>(function (resolve, reject) {
                 fs.exists(manifestPath, function (exists: boolean) {
                     if (!exists) {
                         resolve(false);
@@ -210,7 +210,7 @@ function selectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidMod
 
 function readMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
     
-    let promise = Promise.resolve(false);
+    let promise = Promise.resolve(undefined);
     for (let sourceSet of moduleInfo.sourceSets.filter(x=>x.javaSrcDirs && x.javaSrcDirs.length)) {
         for (let javaSrcDir of sourceSet.javaSrcDirs)
         promise = promise.then(function (isFound: boolean) {
@@ -218,7 +218,7 @@ function readMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModul
                 return Promise.resolve(true);
             let mainActivityPath = path.join(moduleInfo.projectPath, moduleInfo.moduleName,
                 javaSrcDir, moduleInfo.mainActivityFullName.replace(/\./g, '/') + '.java');
-            return new Promise<IAndroidModuleInfo>(function (resolve, reject) {    
+            return new Promise<boolean>(function (resolve, reject) {    
                 fs.exists(mainActivityPath, function (exists: boolean) {
                     if (!exists)
                         return resolve(false);
@@ -300,7 +300,7 @@ function injectMainActivity(moduleInfo: IAndroidModuleInfo, appSecret: string, s
 }
 
 function saveChanges(moduleInfo: IAndroidModuleInfo): Promise<void> {
-    return Promise.resolve()
+    return Promise.resolve(undefined)
         .then(() => new Promise(function (resolve, reject) {
             fs.rename(moduleInfo.buildGradlePath, moduleInfo.buildGradlePath + '.orig', function (err) {
                 if (err)
