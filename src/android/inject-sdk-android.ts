@@ -7,13 +7,16 @@ import { injectSdkBuildGradle } from "./inject-sdk-build-gradle";
 import { MobileCenterSdkModule } from "../mobilecenter-sdk-module";
 import * as _ from 'lodash'
 
-export function injectSdkAndroid(projectPath: string, moduleName: string, 
+export function injectSdkAndroid(projectPath: string, moduleName: string,
     sdkVersion: string, appSecret: string, sdkModules: MobileCenterSdkModule): Promise<void> {
-    
+
     if (!projectPath || !moduleName || !sdkVersion || !appSecret || !sdkModules)
         return Promise.reject(new Error("Invalid arguments."));
 
-    return Promise.resolve({ projectPath, moduleName })
+    //for debug purposes
+    let buildVariant = 'fullDebug';
+
+    return Promise.resolve({ projectPath, moduleName, buildVariant })
         .then(readBuildGradle)
         .then(fillBuildVariants)
         .then(fillSourceSets)
@@ -68,19 +71,61 @@ function fillBuildVariants(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModu
                     productFlavors = Object.keys(representation.android.productFlavors).filter(x => x.trim());
                 }
             }
-            
+
             if (!productFlavors || !productFlavors.length) {
                 moduleInfo.buildVariants = buildTypes.map(x => new BuildVariant(x));
             } else {
                 moduleInfo.buildVariants = [];
                 productFlavors.forEach((productFlavor: string) => {
                     buildTypes.forEach((buildType: string) => {
-                        moduleInfo.buildVariants.push(new BuildVariant(buildType, [ productFlavor ])); //TODO: handle flavorDimensions
+                        moduleInfo.buildVariants.push(new BuildVariant(buildType, [productFlavor])); //TODO: handle flavorDimensions
                     });
                 });
             }
             return moduleInfo;
         });
+}
+
+function fillSourceSets(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
+    let buildVariant = _.find(moduleInfo.buildVariants, x => x.toString() === moduleInfo.buildVariant);
+    if (!buildVariant)
+        return Promise.reject(new Error('Incorrect build variant.'));
+    moduleInfo.sourceSets = [];
+    moduleInfo.sourceSets.push({ name: buildVariant.toString() });
+    if (buildVariant.productFlavors && buildVariant.productFlavors.length) {
+        moduleInfo.sourceSets.push({ name: buildVariant.buildType });
+        moduleInfo.sourceSets.push(...buildVariant.productFlavors.map(x => ({ name: x })));
+    }
+    moduleInfo.sourceSets.push({ name: 'main' });
+
+    return gjs.parseText(moduleInfo.buildGradleContents)
+        .then((representation: any) => {
+            if (representation && representation.android && representation.android.sourceSets) {
+                Object.keys(representation.android.sourceSets).forEach((sourceSetName: string) => {
+                    let sourceSet = _.find(moduleInfo.sourceSets, x => x.name === sourceSetName);
+                    if (sourceSet) {
+                        sourceSet.manifestSrcFile = representation.android.sourceSets[sourceSetName]['manifest.srcFile'];
+                        sourceSet.javaSrcDirs = representation.android.sourceSets[sourceSetName]['java.srcDirs'];
+                    }
+                });
+            }
+
+            moduleInfo.sourceSets.forEach(sourceSet => {
+                sourceSet.manifestSrcFile = sourceSet.manifestSrcFile ?
+                    removeQuotes(sourceSet.manifestSrcFile) :
+                    `src/${sourceSet.name}/AndroidManifest.xml`;
+                sourceSet.javaSrcDirs = sourceSet.javaSrcDirs && sourceSet.javaSrcDirs.length ?
+                    sourceSet.javaSrcDirs.map(removeQuotes) :
+                    [`src/${sourceSet.name}/java`];
+            });
+
+            return moduleInfo;
+        });
+}
+
+function removeQuotes(text: string): string {
+    let matches = text.trim().match(/^['"]([^]*)['"]$/);
+    return matches && matches[1] ? matches[1] : '';
 }
 
 function readManifest(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
@@ -171,7 +216,7 @@ function injectBuildGradle(moduleInfo: IAndroidModuleInfo, sdkVersion: string, s
         if (sdkModules & MobileCenterSdkModule.Distribute)
             lines.push('    compile "com.microsoft.azure.mobile:mobile-center-distribute:${mobileCenterSdkVersion}"');
         lines.push('}');
-        
+
         try {
             moduleInfo.buildGradleContents = injectSdkBuildGradle(moduleInfo.buildGradleContents, lines);
             resolve(moduleInfo);
@@ -183,10 +228,10 @@ function injectBuildGradle(moduleInfo: IAndroidModuleInfo, sdkVersion: string, s
 
 function injectMainActivity(moduleInfo: IAndroidModuleInfo, appSecret: string, sdkModules: MobileCenterSdkModule): Promise<IAndroidModuleInfo> {
     return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
-        
+
         let importStatements: string[] = [];
         let sdkModulesList: string[] = [];
-        
+
         importStatements.push('import com.microsoft.azure.mobile.MobileCenter;');
         if (sdkModules & MobileCenterSdkModule.Analytics) {
             importStatements.push('import com.microsoft.azure.mobile.analytics.Analytics;');
@@ -200,11 +245,11 @@ function injectMainActivity(moduleInfo: IAndroidModuleInfo, appSecret: string, s
             importStatements.push('import com.microsoft.azure.mobile.distribute.Distribute;');
             sdkModulesList.push('Distribute.class');
         }
-        
+
         let startSdkStatements: string[] = [];
         startSdkStatements.push(`MobileCenter.start(getApplication(), "${appSecret}",`);
         startSdkStatements.push(`        ${sdkModulesList.join(', ')});`);
-        
+
         try {
             moduleInfo.mainActivityContents = injectSdkMainActivity(moduleInfo.mainActivityContents,
                 moduleInfo.mainActivityName, importStatements, startSdkStatements);
@@ -217,29 +262,29 @@ function injectMainActivity(moduleInfo: IAndroidModuleInfo, appSecret: string, s
 
 function saveChanges(moduleInfo: IAndroidModuleInfo): Promise<void> {
     return Promise.resolve()
-        .then(() => new Promise(function (resolve, reject){
-            fs.rename(moduleInfo.buildGradlePath, moduleInfo.buildGradlePath + '.orig', function(err) {
+        .then(() => new Promise(function (resolve, reject) {
+            fs.rename(moduleInfo.buildGradlePath, moduleInfo.buildGradlePath + '.orig', function (err) {
                 if (err)
                     reject(err);
                 resolve();
             });
         }))
-        .then(() => new Promise(function (resolve, reject){
-            fs.writeFile(moduleInfo.buildGradlePath, moduleInfo.buildGradleContents, function(err) {
+        .then(() => new Promise(function (resolve, reject) {
+            fs.writeFile(moduleInfo.buildGradlePath, moduleInfo.buildGradleContents, function (err) {
                 if (err)
                     reject(err);
                 resolve();
             });
         }))
-        .then(() => new Promise(function (resolve, reject){
-            fs.rename(moduleInfo.mainActivityPath, moduleInfo.mainActivityPath + '.orig', function(err) {
+        .then(() => new Promise(function (resolve, reject) {
+            fs.rename(moduleInfo.mainActivityPath, moduleInfo.mainActivityPath + '.orig', function (err) {
                 if (err)
                     reject(err);
                 resolve();
             });
         }))
-        .then(() => new Promise(function (resolve, reject){
-            fs.writeFile(moduleInfo.mainActivityPath, moduleInfo.mainActivityContents, function(err) {
+        .then(() => new Promise(function (resolve, reject) {
+            fs.writeFile(moduleInfo.mainActivityPath, moduleInfo.mainActivityContents, function (err) {
                 if (err)
                     reject(err);
                 resolve();
@@ -250,6 +295,7 @@ function saveChanges(moduleInfo: IAndroidModuleInfo): Promise<void> {
 interface IAndroidModuleInfo {
     projectPath: string;
     moduleName: string;
+    buildVariant: string;
 
     buildVariants?: IBuildVariant[];
     sourceSets?: ISourceSet[];
@@ -277,14 +323,15 @@ class BuildVariant implements IBuildVariant {
 
     toString(): string {
         let result = this.buildType;
-        if (this.productFlavors) 
-            this.productFlavors.forEach(pf => result = pf + result.substr(0,1).toLocaleUpperCase() + result.substr(1)); //inverse the order?
+        if (this.productFlavors)
+            this.productFlavors.forEach(pf => result = pf + result.substr(0, 1).toLocaleUpperCase() + result.substr(1)); //inverse the order?
         return result;
     }
 }
 
 interface ISourceSet {
-    manifestSrcFile: string;
-    javaSrcDirs: string[];
+    name: string;
+    manifestSrcFile?: string;
+    javaSrcDirs?: string[];
 }
 
