@@ -16,6 +16,7 @@ export function injectSdkAndroid(projectPath: string, moduleName: string,
     return Promise.resolve({ projectPath, moduleName })
         .then(readBuildGradle)
         .then(fillBuildVariants)
+        .then(fillSourceSets)
         .then(readManifest)
         .then(selectMainActivity)
         .then(readMainActivity)
@@ -50,9 +51,7 @@ function readBuildGradle(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModule
 }
 
 function fillBuildVariants(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
-    //?
-    const matches = moduleInfo.buildGradleContents.match(/(android\s*{(.|\n)*})/); 
-    return gjs.parseText(matches && matches.length > 0 ? matches[0] : moduleInfo.buildGradleContents)
+    return gjs.parseText(moduleInfo.buildGradleContents)
         .then((representation: any) => {
             let buildTypes: string[] = ['debug', 'release'];
             let productFlavors: string[];
