@@ -25,10 +25,7 @@ export function injectSdkAndroid(projectPath: string, moduleName: string, buildV
         .then(function (moduleInfo: IAndroidModuleInfo) {
             return injectMainActivity(moduleInfo, appSecret, sdkModules);
         })
-        .then(saveChanges)
-        .catch(function (err) {
-            console.error(err);
-        });
+        .then(saveChanges);
 }
 
 function readBuildGradle(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
@@ -37,7 +34,7 @@ function readBuildGradle(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModule
 
         fs.exists(moduleInfo.buildGradlePath, function (exists: boolean) {
             if (!exists)
-                return reject(new Error('The module\'s build.gradle file not found.'));
+                return reject(new Error('The module\'s build.gradle file is not found.'));
 
             fs.readFile(moduleInfo.buildGradlePath, 'utf8', function (err, data: string) {
                 if (err)
@@ -93,8 +90,8 @@ function fillSourceSets(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleI
         moduleInfo.sourceSets.push(...buildVariant.productFlavors.map(x => ({ name: x })));
     }
     moduleInfo.sourceSets.push({ name: 'main' });
-
-    return gjs.parseText(moduleInfo.buildGradleContents)
+    const matches = moduleInfo.buildGradleContents.match(/(android\s*{(.|\n)*})/g);
+    return gjs.parseText(matches && matches.length > 0 ? matches[0] : moduleInfo.buildGradleContents)
         .then((representation: any) => {
             if (representation && representation.android && representation.android.sourceSets) {
                 Object.keys(representation.android.sourceSets).forEach((sourceSetName: string) => {
@@ -158,8 +155,8 @@ function selectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidMod
                                 x['intent-filter'] && x['intent-filter'][0] &&
                                 x['intent-filter'][0].action && x['intent-filter'][0].action[0] &&
                                 x['intent-filter'][0].action[0].$['android:name'] === 'android.intent.action.MAIN' &&
-                                x['intent-filter'][0].category && x['intent-filter'][0].category[0] &&
-                                x['intent-filter'][0].category[0].$['android:name'] === 'android.intent.category.LAUNCHER'
+                                x['intent-filter'][0].category && x['intent-filter'][0].category.length &&
+                                _.some(x['intent-filter'][0].category, (x: any) => x.$['android:name'] === 'android.intent.category.LAUNCHER')
                             );
                             if (!mainActivity)
                                 return resolve(false);

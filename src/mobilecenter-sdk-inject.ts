@@ -11,7 +11,8 @@ let projectPath: string,
     sdkModules: MobileCenterSdkModule;
 
 //for debug purposes
-process.argv.push(...'-p D:/tmp/experiments/android-master -b debug -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes'.split(' '));
+//process.argv.push(...'-p D:/tmp/experiments/conference-app-2017 -m app -b developDebug -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes'.split(' '));
+//process.argv.push(...'-p D:/tmp/experiments/cSploit -m cSploit -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes'.split(' '));
 
 idx = process.argv.indexOf('-p');
 if (~idx)
@@ -56,12 +57,9 @@ if (errors.length) {
     errors.forEach(logError);
     logHelp();
 } else {
-    try {
-        injectSdkAndroid(projectPath, moduleName, buildVariant, sdkVersion, appSecret, sdkModules);
-        console.log('Done.');
-    } catch (err) {
-        logError(err);
-    }
+    injectSdkAndroid(projectPath, moduleName, buildVariant, sdkVersion, appSecret, sdkModules)
+        .then(() => console.log('Done.'))
+        .catch(console.error);
 }
 
 function logHelp() {

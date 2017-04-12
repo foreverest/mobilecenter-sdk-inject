@@ -53,7 +53,7 @@ function analyzeCode(code: string, activityName: string): InjectBag {
             bag.blockLevel === 2 &&
             textWalker.currentChar === '{',
         bag => {
-            let matches = /^([ \t]+)@Override\s+protected\s+void\s+onCreate\s*\(\s*Bundle\s+\w+\s*\)\s*$/m.exec(textWalker.backpart)
+            let matches = /^([ \t]+)@Override\s+(public|protected)\s+void\s+onCreate\s*\(\s*Bundle\s+\w+\s*\)\s*$/m.exec(textWalker.backpart)
             if (matches) {
                 bag.isWithinMethod = true;
                 bag.indent = matches[1];
