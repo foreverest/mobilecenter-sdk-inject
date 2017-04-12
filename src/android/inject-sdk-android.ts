@@ -1,10 +1,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as xml2js from 'xml2js'
+import * as gjs from 'gradlejs';
 import { injectSdkMainActivity } from "./inject-sdk-main-activity";
 import { injectSdkBuildGradle } from "./inject-sdk-build-gradle";
 import { MobileCenterSdkModule } from "../mobilecenter-sdk-module";
-//import * as _ from 'lodash'
+import * as _ from 'lodash'
 
 export function injectSdkAndroid(projectPath: string, moduleName: string, 
     sdkVersion: string, appSecret: string, sdkModules: MobileCenterSdkModule): Promise<void> {
@@ -14,6 +15,7 @@ export function injectSdkAndroid(projectPath: string, moduleName: string,
 
     return Promise.resolve({ projectPath, moduleName })
         .then(readBuildGradle)
+        .then(fillBuildVariants)
         .then(readManifest)
         .then(selectMainActivity)
         .then(readMainActivity)
@@ -45,6 +47,41 @@ function readBuildGradle(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModule
             });
         });
     });
+}
+
+function fillBuildVariants(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
+    //?
+    const matches = moduleInfo.buildGradleContents.match(/(android\s*{(.|\n)*})/); 
+    return gjs.parseText(matches && matches.length > 0 ? matches[0] : moduleInfo.buildGradleContents)
+        .then((representation: any) => {
+            let buildTypes: string[] = ['debug', 'release'];
+            let productFlavors: string[];
+            if (representation && representation.android) {
+                if (representation.android.buildTypes) {
+                    Object.keys(representation.android.buildTypes).forEach((buildType: string) => {
+                        if (!_.includes(buildTypes, buildType) && buildType.trim()) {
+                            buildTypes.push(buildType);
+                        }
+                    });
+                }
+
+                if (representation.android.productFlavors) { //TODO: handle flavorDimensions & variantFilters
+                    productFlavors = Object.keys(representation.android.productFlavors).filter(x => x.trim());
+                }
+            }
+            
+            if (!productFlavors || !productFlavors.length) {
+                moduleInfo.buildVariants = buildTypes.map(x => new BuildVariant(x));
+            } else {
+                moduleInfo.buildVariants = [];
+                productFlavors.forEach((productFlavor: string) => {
+                    buildTypes.forEach((buildType: string) => {
+                        moduleInfo.buildVariants.push(new BuildVariant(buildType, [ productFlavor ])); //TODO: handle flavorDimensions
+                    });
+                });
+            }
+            return moduleInfo;
+        });
 }
 
 function readManifest(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
@@ -215,6 +252,9 @@ interface IAndroidModuleInfo {
     projectPath: string;
     moduleName: string;
 
+    buildVariants?: IBuildVariant[];
+    sourceSets?: ISourceSet[];
+
     buildGradlePath?: string;
     buildGradleContents?: string;
     manifestPath?: string;
@@ -225,3 +265,27 @@ interface IAndroidModuleInfo {
     mainActivityName?: string;
     mainActivityFullName?: string;
 }
+
+interface IBuildVariant {
+    buildType: string;
+    productFlavors?: string[];
+}
+
+class BuildVariant implements IBuildVariant {
+    constructor(
+        public buildType: string,
+        public productFlavors?: string[]) { }
+
+    toString(): string {
+        let result = this.buildType;
+        if (this.productFlavors) 
+            this.productFlavors.forEach(pf => result = pf + result.substr(0,1).toLocaleUpperCase() + result.substr(1)); //inverse the order?
+        return result;
+    }
+}
+
+interface ISourceSet {
+    manifestSrcFile: string;
+    javaSrcDirs: string[];
+}
+

@@ -9,6 +9,9 @@ let projectPath: string,
     appSecret: string,
     sdkModules: MobileCenterSdkModule;
 
+//for debug purposes
+process.argv.push(...'-p d:/android/projects/HelloAndroid -m app -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes'.split(' '));
+
 idx = process.argv.indexOf('-p');
 if (~idx)
     projectPath = process.argv[idx + 1];
