@@ -20,7 +20,6 @@ export function injectSdkAndroid(projectPath: string, moduleName: string,
         .then(readBuildGradle)
         .then(fillBuildVariants)
         .then(fillSourceSets)
-        .then(readManifest)
         .then(selectMainActivity)
         .then(readMainActivity)
         .then(function (moduleInfo: IAndroidModuleInfo) {
@@ -128,80 +127,120 @@ function removeQuotes(text: string): string {
     return matches && matches[1] ? matches[1] : '';
 }
 
-function readManifest(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
-    return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
-        moduleInfo.manifestPath = path.join(moduleInfo.projectPath, moduleInfo.moduleName, 'src/main/AndroidManifest.xml')
+function selectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
 
-        fs.exists(moduleInfo.manifestPath, function (exists: boolean) {
-            if (!exists)
-                reject(new Error('The module\'s build.gradle file not found.'));
+    let promise = Promise.resolve(false);
+    for (let sourceSet of moduleInfo.sourceSets) {
+        promise = promise.then(function (isFound: boolean) {
+            if (isFound)
+                return Promise.resolve(true);
+            let manifestPath = path.join(moduleInfo.projectPath, moduleInfo.moduleName, sourceSet.manifestSrcFile);
+            return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
+                fs.exists(manifestPath, function (exists: boolean) {
+                    if (!exists) {
+                        resolve(false);
+                        return;
+                    }
+                    fs.readFile(manifestPath, 'utf8', function (err: NodeJS.ErrnoException, data: string) {
+                        if (err) {
+                            reject(err);
+                            return;
+                        }
+                        xml2js.parseString(data, function (err, xml) {
 
-            fs.readFile(moduleInfo.manifestPath, 'utf8', function (err: NodeJS.ErrnoException, data: string) {
-                if (err)
-                    reject(err);
-                moduleInfo.manifestContents = data;
-                resolve(moduleInfo);
+                            if (err) {
+                                reject(err);
+                                return;
+                            }
+                            if (!xml || !xml.manifest || !xml.manifest.application || !xml.manifest.application[0]) {
+                                resolve(false);
+                                return;
+                            }
+                            let packageName = xml.manifest.$.package;
+                            let application = xml.manifest.application[0];
+                            if (!application.activity || !application.activity.length) {
+                                resolve(false);
+                                return;
+                            }
+                            
+                            let mainActivity = _.find<any>(application.activity, x =>
+                                x['intent-filter'] && x['intent-filter'][0] &&
+                                x['intent-filter'][0].action && x['intent-filter'][0].action[0] &&
+                                x['intent-filter'][0].action[0].$['android:name'] === 'android.intent.action.MAIN' &&
+                                x['intent-filter'][0].category && x['intent-filter'][0].category[0] &&
+                                x['intent-filter'][0].category[0].$['android:name'] === 'android.intent.category.LAUNCHER'
+                            );
+                            if (!mainActivity) {
+                                resolve(false);
+                                return;
+                            }
+
+                            let mainActivityFullName = mainActivity.$['android:name'];
+                            if (!mainActivityFullName) {
+                                resolve(false);
+                                return;
+                            }
+                            if (mainActivityFullName[0] === '.') {
+                                if (!packageName) {
+                                    reject(new Error('Incorrect manifest file. Package name must be specified.'));
+                                    return;
+                                }
+                                mainActivityFullName = packageName + mainActivityFullName;
+                            }
+
+                            moduleInfo.mainActivityFullName = mainActivityFullName;
+                            moduleInfo.mainActivityName = mainActivityFullName.match(/\w+$/)[0];
+                            moduleInfo.manifestPath = sourceSet.manifestSrcFile;
+                            moduleInfo.manifestContents = data;
+                            resolve(true);
+                        });
+                    });
+                });
             });
         });
-    });
-}
+    }
 
-function selectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
-    return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
-        let xmlObj = xml2js.parseString(moduleInfo.manifestContents, function (err, data) {
-            if (err)
-                reject(err);
-            if (!data || !data.manifest || !data.manifest.application || !data.manifest.application[0])
-                reject(new Error('Cannot parse manifest file.'));
-            let packageName = data.manifest.$.package;
-            let application = data.manifest.application[0];
-            if (!application.activity || !application.activity.length)
-                reject(new Error('There are no activities to select.'));
-            //TODO: use lodash?
-            let mainActivities = application.activity.filter(x =>
-                x['intent-filter'] && x['intent-filter'][0] &&
-                x['intent-filter'][0].action && x['intent-filter'][0].action[0] &&
-                x['intent-filter'][0].action[0].$['android:name'] === 'android.intent.action.MAIN' &&
-                x['intent-filter'][0].category && x['intent-filter'][0].category[0] &&
-                x['intent-filter'][0].category[0].$['android:name'] === 'android.intent.category.LAUNCHER'
-            );
-            if (!mainActivities || !mainActivities.length)
-                reject(new Error('There are no main(launch) activities.'));
-
-            let mainActivityFullName = mainActivities[0].$['android:name'];
-            if (!mainActivityFullName)
-                reject(new Error('Incorrect MainActivity name.'));
-            if (mainActivityFullName[0] === '.') {
-                if (!packageName)
-                    reject(new Error('Package must be defined.'));
-                mainActivityFullName = packageName + mainActivityFullName;
-            }
-
-            moduleInfo.mainActivityFullName = mainActivityFullName;
-            moduleInfo.mainActivityName = mainActivityFullName.match(/\w+$/)[0];
-
-            resolve(moduleInfo);
+    return promise.
+        then(function (isFound: boolean) {
+            if (!isFound)
+                throw new Error('Manifest file is not found.');
+            return moduleInfo;
         });
-    });
 }
 
 function readMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
-    return new Promise<IAndroidModuleInfo>(function (resolve, reject) {
-        moduleInfo.mainActivityPath = path.join(moduleInfo.projectPath, moduleInfo.moduleName,
-            'src/main/java', moduleInfo.mainActivityFullName.replace(/\./g, '/') + '.java');
+    
+    let promise = Promise.resolve(false);
+    for (let sourceSet of moduleInfo.sourceSets.filter(x=>x.javaSrcDirs && x.javaSrcDirs.length)) {
+        for (let javaSrcDir of sourceSet.javaSrcDirs)
+        promise = promise.then(function (isFound: boolean) {
+            if (isFound)
+                return Promise.resolve(true);
+            let mainActivityPath = path.join(moduleInfo.projectPath, moduleInfo.moduleName,
+                javaSrcDir, moduleInfo.mainActivityFullName.replace(/\./g, '/') + '.java');
+            return new Promise<IAndroidModuleInfo>(function (resolve, reject) {    
+                fs.exists(mainActivityPath, function (exists: boolean) {
+                    if (!exists)
+                        return resolve(false);
 
-        fs.exists(moduleInfo.mainActivityPath, function (exists: boolean) {
-            if (!exists)
-                reject(new Error(`File not found: ${activityPath}.`));
-
-            fs.readFile(moduleInfo.mainActivityPath, 'utf8', function (err, data: string) {
-                if (err)
-                    reject(err);
-                moduleInfo.mainActivityContents = data;
-                resolve(moduleInfo);
+                    fs.readFile(mainActivityPath, 'utf8', function (err, data: string) {
+                        if (err)
+                            reject(err);
+                        moduleInfo.mainActivityPath = mainActivityPath;
+                        moduleInfo.mainActivityContents = data;
+                        resolve(true);
+                    });
+                });
             });
         });
-    });
+    }
+
+    return promise.
+        then(function (isFound: boolean) {
+            if (!isFound)
+                throw new Error('Main activity file not found.');
+            return moduleInfo;
+        });
 }
 
 function injectBuildGradle(moduleInfo: IAndroidModuleInfo, sdkVersion: string, sdkModules: MobileCenterSdkModule): Promise<IAndroidModuleInfo> {
@@ -302,8 +341,8 @@ interface IAndroidModuleInfo {
 
     buildGradlePath?: string;
     buildGradleContents?: string;
-    manifestPath?: string;
-    manifestContents?: string;
+    manifestPath?: string;          //not required?
+    manifestContents?: string;      //not required?
     mainActivityPath?: string;
     mainActivityContents?: string;
 
