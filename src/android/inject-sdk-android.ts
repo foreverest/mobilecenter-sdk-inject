@@ -7,14 +7,11 @@ import * as _ from 'lodash'
 const xml2js = require('xml2js');
 const gjs = require('gradlejs');
 
-export function injectSdkAndroid(projectPath: string, moduleName: string,
+export function injectSdkAndroid(projectPath: string, moduleName: string, buildVariant: string,
     sdkVersion: string, appSecret: string, sdkModules: MobileCenterSdkModule): Promise<void> {
 
-    if (!projectPath || !moduleName || !sdkVersion || !appSecret || !sdkModules)
+    if (!projectPath || !buildVariant || !sdkVersion || !appSecret || !sdkModules)
         return Promise.reject(new Error("Invalid arguments."));
-
-    //for debug purposes
-    let buildVariant = 'fullDebug';
 
     return Promise.resolve({ projectPath, moduleName, buildVariant })
         .then(readBuildGradle)

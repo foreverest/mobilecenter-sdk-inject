@@ -5,12 +5,13 @@ let errors: string[] = [];
 let idx: number;
 let projectPath: string,
     moduleName: string,
+    buildVariant: string,
     sdkVersion: string,
     appSecret: string,
     sdkModules: MobileCenterSdkModule;
 
 //for debug purposes
-process.argv.push(...'-p d:/android/projects/HelloAndroid -m app -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes'.split(' '));
+process.argv.push(...'-p D:/tmp/experiments/android-master -b debug -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes'.split(' '));
 
 idx = process.argv.indexOf('-p');
 if (~idx)
@@ -19,10 +20,10 @@ if (!projectPath)
     errors.push('Please specify the path to the Android project.');
 
 idx = process.argv.indexOf('-m');
-if (~idx)
-    moduleName = process.argv[idx + 1];
-if (!moduleName)
-    errors.push('Please specify the name of the Android module.');
+moduleName = ~idx ? process.argv[idx + 1] : '';
+
+idx = process.argv.indexOf('-b');
+buildVariant = ~idx ? process.argv[idx + 1] : 'release';
 
 idx = process.argv.indexOf('-v');
 if (~idx)
@@ -56,7 +57,7 @@ if (errors.length) {
     logHelp();
 } else {
     try {
-        injectSdkAndroid(projectPath, moduleName, sdkVersion, appSecret, sdkModules);
+        injectSdkAndroid(projectPath, moduleName, buildVariant, sdkVersion, appSecret, sdkModules);
         console.log('Done.');
     } catch (err) {
         logError(err);
@@ -69,13 +70,14 @@ function logHelp() {
     console.log('\nKeys:');
     console.log('\t-p: The following argument must be <projectPath>');
     console.log('\t-m: The following argument must be <moduleName>');
+    console.log('\t-b: The following argument must be <buildVariant>');
     console.log('\t-v: The following argument must be <sdkVersion>');
     console.log('\t-s: The following argument must be <appSecret>');
     console.log('\t--analytics: Includes Mobile Center SDK Analytics module');
     console.log('\t--crashes: Includes Mobile Center SDK Crashes module');
     console.log('\t--distribute: Includes Mobile Center SDK Distribute module');
     console.log('\nExample:');
-    console.log('\tnode mobilecenter-sdk-inject.js -p d:/android/projects/HelloAndroid -m app -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes');
+    console.log('\tnode mobilecenter-sdk-inject.js -p d:/android/projects/HelloAndroid -m app -b debug -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes');
 }
 
 function logError(err) {
