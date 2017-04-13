@@ -12,7 +12,7 @@ export function injectSdkMainActivity(code: string, activityName: string, import
     importStatements.forEach(x => result += '\n' + x);
     result += code.substr(info.injectImportsAt, info.injectStartSdkAt - info.injectImportsAt).replace(/^\s*/, '\n\n');
     startSdkStatements.forEach(x => result += '\n' + info.indent + info.indent + x);
-    result += code.substr(info.injectStartSdkAt).replace(/^\s*/, '\n' + info.indent);
+    result += code.substr(info.injectStartSdkAt).replace(/^[ \t]*}/, '\n' + info.indent + '}');
 
     return result;
 }
@@ -55,21 +55,10 @@ function analyzeCode(code: string, activityName: string): InjectBag {
         bag => {
             let matches = /^([ \t]+)@Override\s+(public|protected)\s+void\s+onCreate\s*\(\s*Bundle\s+\w+\s*\)\s*$/m.exec(textWalker.backpart)
             if (matches) {
-                bag.isWithinMethod = true;
+                bag.injectStartSdkAt = textWalker.position + 1;
                 bag.indent = matches[1];
+                textWalker.stop();
             }
-        }
-    );
-    textWalker.addTrap(
-        bag =>
-            bag.significant &&
-            bag.blockLevel === 1 &&
-            bag.isWithinMethod &&
-            textWalker.currentChar === '}',
-        bag => {
-            let matches = /\s*$/.exec(textWalker.backpart);
-            bag.injectStartSdkAt = matches ? matches.index : textWalker.position;
-            bag.isWithinMethod = false;
         }
     );
 
@@ -78,7 +67,6 @@ function analyzeCode(code: string, activityName: string): InjectBag {
 
 class InjectBag extends StandardBag {
     isWithinClass: boolean;
-    isWithinMethod: boolean;
 
     indent: string;
     injectImportsAt: number;

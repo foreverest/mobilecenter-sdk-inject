@@ -11,9 +11,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
         MobileCenter.start(getApplication(), "00000000-0000-0000-0000-000000000000",
                 Analytics.class, Crashes.class, Distribute.class);
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
     }
 }
