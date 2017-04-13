@@ -4,9 +4,10 @@ export function injectSdkMainActivity(code: string, activityName: string, import
     let result: string;
     let info = analyzeCode(code, activityName);
 
-    if (info.injectImportsAt == undefined || info.injectStartSdkAt == undefined)
+    if (info.injectStartSdkAt == undefined)
         throw new Error("Cannot integrate the MobileCenter SDK into the main activity file.");
     info.indent = info.indent || '    ';
+    info.injectImportsAt = info.injectImportsAt || 0;
 
     result = code.substr(0, info.injectImportsAt);
     importStatements.forEach(x => result += '\n' + x);
@@ -22,6 +23,20 @@ function analyzeCode(code: string, activityName: string): InjectBag {
     let injectBag = new InjectBag();
     let textWalker = new StandardCodeWalker<InjectBag>(code, injectBag);
 
+    //import statements
+    textWalker.addTrap(
+        bag =>
+            bag.significant &&
+            !bag.blockLevel &&
+            textWalker.currentChar === 'i',
+        bag => {
+            let matches = textWalker.forepart.match(/^import\s+[^]+?;/);
+            if (matches && matches[0]) {
+                bag.injectImportsAt = textWalker.position + matches[0].length;
+            }
+        }
+    );
+
     //class definition
     textWalker.addTrap(
         bag =>
@@ -30,10 +45,8 @@ function analyzeCode(code: string, activityName: string): InjectBag {
             textWalker.currentChar === '{',
         bag => {
             let matches = textWalker.backpart.match(`\\s*public\\s+class\\s+${activityName}\\s+extends[^{]+$`);
-            if (matches && matches[0]) {
-                bag.injectImportsAt = matches.index;
+            if (matches && matches[0]) 
                 bag.isWithinClass = true;
-            }
         }
     );
     textWalker.addTrap(
