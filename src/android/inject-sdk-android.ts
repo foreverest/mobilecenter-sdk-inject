@@ -90,8 +90,8 @@ function fillSourceSets(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleI
         moduleInfo.sourceSets.push(...buildVariant.productFlavors.map(x => ({ name: x })));
     }
     moduleInfo.sourceSets.push({ name: 'main' });
-    const matches = moduleInfo.buildGradleContents.match(/(android\s*{(.|\n)*})/g);
-    return gjs.parseText(matches && matches.length > 0 ? matches[0] : moduleInfo.buildGradleContents)
+    const matches = moduleInfo.buildGradleContents.match(/(android\s*{[^]*})/);
+    return gjs.parseText(matches && matches.length ? matches[0] : moduleInfo.buildGradleContents)
         .then((representation: any) => {
             if (representation && representation.android && representation.android.sourceSets) {
                 Object.keys(representation.android.sourceSets).forEach((sourceSetName: string) => {
@@ -173,8 +173,6 @@ function selectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidMod
 
                             moduleInfo.mainActivityFullName = mainActivityFullName;
                             moduleInfo.mainActivityName = mainActivityFullName.match(/\w+$/)[0];
-                            moduleInfo.manifestPath = sourceSet.manifestSrcFile;
-                            moduleInfo.manifestContents = data;
                             resolve(true);
                         });
                     });
@@ -281,21 +279,7 @@ function injectMainActivity(moduleInfo: IAndroidModuleInfo, appSecret: string, s
 function saveChanges(moduleInfo: IAndroidModuleInfo): Promise<void> {
     return Promise.resolve(undefined)
         .then(() => new Promise(function (resolve, reject) {
-            fs.rename(moduleInfo.buildGradlePath, moduleInfo.buildGradlePath + '.orig', function (err) {
-                if (err)
-                    reject(err);
-                resolve();
-            });
-        }))
-        .then(() => new Promise(function (resolve, reject) {
             fs.writeFile(moduleInfo.buildGradlePath, moduleInfo.buildGradleContents, function (err) {
-                if (err)
-                    reject(err);
-                resolve();
-            });
-        }))
-        .then(() => new Promise(function (resolve, reject) {
-            fs.rename(moduleInfo.mainActivityPath, moduleInfo.mainActivityPath + '.orig', function (err) {
                 if (err)
                     reject(err);
                 resolve();
@@ -320,11 +304,8 @@ interface IAndroidModuleInfo {
 
     buildGradlePath?: string;
     buildGradleContents?: string;
-    manifestPath?: string;          //not required?
-    manifestContents?: string;      //not required?
     mainActivityPath?: string;
     mainActivityContents?: string;
-
     mainActivityName?: string;
     mainActivityFullName?: string;
 }

@@ -5,7 +5,7 @@ export function injectSdkMainActivity(code: string, activityName: string, import
     let info = analyzeCode(code, activityName);
 
     if (info.injectImportsAt == undefined || info.injectStartSdkAt == undefined)
-        throw new Error("Cannot find appropriate positions for MobileCenter SDK integration.");
+        throw new Error("Cannot integrate the MobileCenter SDK into the main activity file.");
     info.indent = info.indent || '    ';
 
     result = code.substr(0, info.injectImportsAt);

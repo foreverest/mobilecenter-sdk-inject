@@ -5,7 +5,7 @@ export function injectSdkBuildGradle(code: string, lines: string[]): string {
     let info = analyzeCode(code);
 
     if (info.injectAt == undefined)
-        throw new Error("Cannot find an appropriate position for MobileCenter SDK integration.");
+        throw new Error("Cannot integrate the MobileCenter SDK into build.gradle file.");
     
     result = code.substr(0, info.injectAt) + '\n';
     lines.forEach(x => result += '\n' + x);
