@@ -5,6 +5,7 @@ import { injectSdkBuildGradle } from "./inject-sdk-build-gradle";
 import { MobileCenterSdkModule } from "../mobilecenter-sdk-module";
 import * as _ from 'lodash'
 import { cleanSdkBuildGradle } from "./clean-sdk-build-gradle";
+import { cleanSdkMainActivity } from "./clean-sdk-main-activity";
 const xml2js = require('xml2js');
 const gjs = require('gradlejs');
 
@@ -270,7 +271,8 @@ function injectMainActivity(moduleInfo: IAndroidModuleInfo, appSecret: string, s
     startSdkStatements.push(`        ${sdkModulesList.join(', ')});`);
 
     try {
-        moduleInfo.mainActivityContents = injectSdkMainActivity(moduleInfo.mainActivityContents,
+        let cleanedCode = cleanSdkMainActivity(moduleInfo.mainActivityContents, moduleInfo.mainActivityName);
+        moduleInfo.mainActivityContents = injectSdkMainActivity(cleanedCode,
             moduleInfo.mainActivityName, importStatements, startSdkStatements);
     } catch (err) {
         return Promise.reject(err);

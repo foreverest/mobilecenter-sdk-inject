@@ -41,6 +41,14 @@ export class ActivityWalker<TBag extends ActivityBag> extends StandardCodeWalker
                 }
             }
         );
+        this.addTrap(
+            bag =>
+                bag.significant &&
+                bag.isWithinMethod &&
+                bag.blockLevel === 1,
+            bag => 
+                bag.isWithinMethod = false
+        );
     }
 }
 
