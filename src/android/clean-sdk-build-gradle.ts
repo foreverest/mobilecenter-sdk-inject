@@ -1,3 +1,4 @@
+import { TextCutter } from './../utils/text-cuter';
 import { StandardCodeWalker, StandardBag } from './../standard-code-walker';
 //import * as _ from 'lodash'
 
@@ -7,31 +8,24 @@ export function cleanSdkBuildGradle(code: string): string {
     
     info.dependenciesBlocks
         .forEach(block => {
-            let shift = 0;
-            block.modifiedText = block.originalText;
-            block.compiles.forEach(compile => {
-                let position = compile.position - shift;
-                let newLinePos = block.modifiedText.indexOf('\n', position);
-                let firstPart = block.modifiedText.substring(0, position);
-                let secondPart = '';
-                if (~newLinePos) {
-                    secondPart = block.modifiedText.substr(newLinePos);        
-                    shift += newLinePos - position + 1;
-                }
-                block.modifiedText = firstPart + secondPart;
-            });
+            let textCutter = new TextCutter(block.originalText);
+            block.compiles.forEach(compile => 
+                textCutter
+                    .goto(compile.position)
+                    .cutLine()
+            );
             
             block.defs.forEach(def => {
                 let regexp = new RegExp(def.name, 'g');
                 let matches = regexp.exec(block.modifiedText);
                 if (!matches || matches.length === 1) {
-                    regexp = new RegExp(`def\\s+${def.name}\\s*=\\s*["']${def.value}["']`, 'g');
-                    block.modifiedText = block.modifiedText.replace(regexp, '');
+                    textCutter
+                        .goto(def.position)
+                        .cut(def.text.length);
                 }
             });
 
-            //remove empty lines
-            block.modifiedText = block.modifiedText.replace(/\s*\n/g, '');
+            block.modifiedText = textCutter.cutEmptyLines().result;
     });
 
     if (info.dependenciesBlocks.length) {
@@ -102,6 +96,7 @@ function analyzeCode(code: string): CleanBag {
             let matches = textWalker.forepart.match(/^def\s+(\w+)\s*=\s*["'](.+?)["']/);
             if (matches && matches[1] && matches[2]) 
                 bag.currentBlock.defs.push({ 
+                    text: matches[0],
                     name: matches[1], 
                     value: matches[2], 
                     position: textWalker.position - bag.currentBlock.startsAt
@@ -138,6 +133,14 @@ class IDependenciesBlock {
     originalText?: string;
     modifiedText?: string;
 
-    defs: { name: string; value: string; position: number }[];
-    compiles: { module: string; position: number }[];
+    defs: {
+        text: string;
+        name: string; 
+        value: string; 
+        position: number 
+    }[];
+    compiles: { 
+        module: string; 
+        position: number 
+    }[];
 }

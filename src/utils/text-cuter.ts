@@ -46,13 +46,28 @@ export class TextCutter {
         let inner = _.find(this._fragments, f => f.start >= this._position && this._position + length - 1 >= f.end);
         if (inner) 
             this._fragments.splice(this._fragments.indexOf(outer), 1);
-
+        
+        this._position += length;
         return this;
     }
 
     cutEmptyLines(): TextCutter {
         this._fragments = this._fragments.filter(x => x.text.trim());
         return this;
+    }
+
+    cutLine(): TextCutter {
+        return this.cutLineIf(() => true);
+    }
+
+    cutLineIf(predicate: (line: string) => any): TextCutter {
+        let start = this._text.lastIndexOf('\n', this._position) + 1;
+        let length = this._text.indexOf('\n', start) + 1;
+        if (length)
+            length -= start;
+        return predicate(this._text.substr(start, length)) ?
+            this.goto(start).cut(length) :
+            this;
     }
 }
 
