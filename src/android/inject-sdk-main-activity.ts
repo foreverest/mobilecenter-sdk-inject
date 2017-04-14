@@ -10,10 +10,10 @@ export function injectSdkMainActivity(code: string, activityName: string, import
     info.injectImportsAt = info.injectImportsAt || 0;
 
     result = code.substr(0, info.injectImportsAt);
-    importStatements.forEach(x => result += '\n' + x);
-    result += code.substr(info.injectImportsAt, info.injectStartSdkAt - info.injectImportsAt).replace(/^\s*/, '\n\n');
-    startSdkStatements.forEach(x => result += '\n' + info.indent + info.indent + x);
-    result += code.substr(info.injectStartSdkAt).replace(/^[ \t]*}/, '\n' + info.indent + '}');
+    importStatements.forEach(x => result += '\r\n' + x);
+    result += code.substr(info.injectImportsAt, info.injectStartSdkAt - info.injectImportsAt).replace(/^\s*/, '\r\n\r\n');
+    startSdkStatements.forEach(x => result += '\r\n' + info.indent + info.indent + x);
+    result += code.substr(info.injectStartSdkAt).replace(/^[ \t]*}/, '\r\n' + info.indent + '}');
 
     return result;
 }

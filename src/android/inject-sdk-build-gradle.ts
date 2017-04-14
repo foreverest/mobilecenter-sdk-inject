@@ -1,5 +1,5 @@
 export function injectSdkBuildGradle(code: string, lines: string[]): string {
-    let result: string = code.trim() + '\n';
-    lines.forEach(x => result += '\n' + x);
+    let result: string = code.trim() + '\r\n';
+    lines.forEach(x => result += '\r\n' + x);
     return result;
 }
