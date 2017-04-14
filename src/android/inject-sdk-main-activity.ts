@@ -1,4 +1,4 @@
-import { StandardCodeWalker, StandardBag } from './../standard-code-walker';
+import { ActivityBag, ActivityWalker } from './activity-walker';
 
 export function injectSdkMainActivity(code: string, activityName: string, importStatements: string[], startSdkStatements: string[]): string {
     let result: string;
@@ -21,7 +21,7 @@ export function injectSdkMainActivity(code: string, activityName: string, import
 function analyzeCode(code: string, activityName: string): InjectBag {
 
     let injectBag = new InjectBag();
-    let textWalker = new StandardCodeWalker<InjectBag>(code, injectBag);
+    let textWalker = new ActivityWalker<InjectBag>(code, injectBag, activityName);
 
     //import statements
     textWalker.addTrap(
@@ -37,50 +37,20 @@ function analyzeCode(code: string, activityName: string): InjectBag {
         }
     );
 
-    //class definition
+    //start SDK position
     textWalker.addTrap(
         bag =>
-            bag.significant &&
-            bag.blockLevel === 1 &&
-            textWalker.currentChar === '{',
+            bag.isWithinMethod,
         bag => {
-            let matches = textWalker.backpart.match(`\\s*public\\s+class\\s+${activityName}\\s+extends[^{]+$`);
-            if (matches && matches[0]) 
-                bag.isWithinClass = true;
-        }
-    );
-    textWalker.addTrap(
-        bag =>
-            bag.significant &&
-            bag.blockLevel === 0 &&
-            bag.isWithinClass &&
-            textWalker.currentChar === '}',
-        bag => bag.isWithinClass = false
-    );
-
-    //onCreate method definition
-    textWalker.addTrap(
-        bag =>
-            bag.significant &&
-            bag.isWithinClass &&
-            bag.blockLevel === 2 &&
-            textWalker.currentChar === '{',
-        bag => {
-            let matches = /^([ \t]+)@Override\s+(public|protected)\s+void\s+onCreate\s*\(\s*Bundle\s+\w+\s*\)\s*$/m.exec(textWalker.backpart)
-            if (matches) {
-                bag.injectStartSdkAt = textWalker.position + 1;
-                bag.indent = matches[1];
-                textWalker.stop();
-            }
+            bag.injectStartSdkAt = textWalker.position + 1;
+            textWalker.stop();
         }
     );
 
     return textWalker.walk();
 }
 
-class InjectBag extends StandardBag {
-    isWithinClass: boolean;
-
+class InjectBag extends ActivityBag {
     indent: string;
     injectImportsAt: number;
     injectStartSdkAt: number;
