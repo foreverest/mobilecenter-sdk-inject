@@ -1,6 +1,5 @@
 import { TextCutter } from './../utils/text-cuter';
 import { StandardCodeWalker, StandardBag } from './../standard-code-walker';
-//import * as _ from 'lodash'
 
 export function cleanSdkBuildGradle(code: string): string {
     let result: string;
@@ -29,19 +28,25 @@ export function cleanSdkBuildGradle(code: string): string {
     });
 
     if (info.dependenciesBlocks.length) {
-        result = code.substr(0, info.dependenciesBlocks[0].startsAt);
-        for (let i = 0; i < info.dependenciesBlocks.length; i++) {
-            let block = info.dependenciesBlocks[i];
-            let position = result.length;
-            result += block.modifiedText;
-            if (i < info.dependenciesBlocks.length-1)
-                result += code.substring(position + block.originalText.length, info.dependenciesBlocks[i+1].startsAt);
-        }
-        let lastBlock = info.dependenciesBlocks[info.dependenciesBlocks.length - 1];
-        result += code.substr(lastBlock.startsAt + lastBlock.originalText.length);
-        
-        //remove empty blocks
+        let textCutter = new TextCutter(code);
+        info.dependenciesBlocks.forEach(block => 
+            textCutter
+                .goto(block.startsAt)
+                .cut(block.originalText.length)
+        );
+        result = textCutter.result;
+        let shift = 0;
+        info.dependenciesBlocks.forEach(block => {
+            result = 
+                result.substr(0, block.startsAt + shift) +
+                block.modifiedText +
+                result.substr(block.startsAt + shift + block.modifiedText.length);
+            shift += block.modifiedText.length;
+        });
+                
+        // //remove empty blocks
         result = result.replace(/dependencies\s*{\s*}/g, '');
+
     } else
         result = code;
 
