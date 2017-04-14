@@ -1,4 +1,4 @@
-import { TextWalker } from './text-walker/text-walker';
+import { TextWalker } from './utils/text-walker/text-walker';
 
 export class StandardCodeWalker<TBag extends StandardBag> extends TextWalker<TBag> {
 
