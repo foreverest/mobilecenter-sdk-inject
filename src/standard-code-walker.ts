@@ -34,7 +34,7 @@ export class StandardCodeWalker<TBag extends StandardBag> extends TextWalker<TBa
         this.addTrap(
             bag =>
                 bag.slComment &&
-                this.prevChar === '\n',
+                this.currentChar === '\n',
             bag =>
                 bag.slComment = false
         );

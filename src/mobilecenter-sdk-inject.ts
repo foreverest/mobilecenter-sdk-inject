@@ -1,3 +1,4 @@
+
 import { injectSdkAndroid } from "./android/inject-sdk-android";
 import { MobileCenterSdkModule } from "./mobilecenter-sdk-module";
 
@@ -12,8 +13,8 @@ let projectPath: string,
 
 //for debug purposes
 //process.argv.push(...'-p D:/tmp/experiments/conference-app-2017 -m app -b developDebug -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes'.split(' '));
-//process.argv.push(...'-p D:/tmp/experiments/cSploit -m cSploit -v 0.6.1 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes'.split(' '));
-
+//process.argv.push(...'-p D:/tmp/experiments/cSploit -m cSploit -v 0.6.2 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics --crashes'.split(' '));
+//process.argv.push(...'-p D:/demo/owncloud -v 0.6.2 -s 15dd2285-a3f4-431a-9640-2695aa37e8a7 --analytics'.split(' '));
 idx = process.argv.indexOf('-p');
 if (~idx)
     projectPath = process.argv[idx + 1];

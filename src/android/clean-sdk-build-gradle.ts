@@ -1,7 +1,7 @@
 import { StandardCodeWalker, StandardBag } from './../standard-code-walker';
 //import * as _ from 'lodash'
 
-export function clearSdkBuildGradle(code: string): string {
+export function cleanSdkBuildGradle(code: string): string {
     let result: string;
     let info = analyzeCode(code);
     
@@ -67,7 +67,7 @@ function analyzeCode(code: string): CleanBag {
             !bag.currentBlock &&
             textWalker.prevChar === '{',
         bag => {
-            let matches = textWalker.backpart.match(/dependencies\s+{$/);
+            let matches = textWalker.backpart.match(/dependencies\s*{$/);
             if (matches && matches[0]) {
                 bag.currentBlock = { 
                     startsAt: textWalker.position,

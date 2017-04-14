@@ -7,11 +7,12 @@ import android.os.Bundle;
 */
 
 import android.os.Bundle;
-//import android.os.Bundle;
 import com.microsoft.azure.mobile.MobileCenter;
 import com.microsoft.azure.mobile.analytics.Analytics;
 import com.microsoft.azure.mobile.crashes.Crashes;
 import com.microsoft.azure.mobile.distribute.Distribute;
+
+//import android.os.Bundle;
 
 public class MainActivity extends AppCompatActivity {
 
