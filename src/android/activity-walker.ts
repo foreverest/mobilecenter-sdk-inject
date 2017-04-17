@@ -1,4 +1,5 @@
 import { StandardBag, StandardCodeWalker } from './../standard-code-walker';
+import { removeComments } from "../utils/remove-uselesses";
 
 export class ActivityWalker<TBag extends ActivityBag> extends StandardCodeWalker<TBag> {
 
@@ -12,7 +13,7 @@ export class ActivityWalker<TBag extends ActivityBag> extends StandardCodeWalker
                 bag.blockLevel === 1 &&
                 this.currentChar === '{',
             bag => {
-                let matches = this.backpart.match(`\\s*public\\s+class\\s+${activityName}\\s+extends[^{]+$`);
+                let matches = removeComments(this.backpart).match(`\\s*public\\s+class\\s+${activityName}\\s+extends[^{]+$`);
                 if (matches && matches[0])
                     bag.isWithinClass = true;
             }
@@ -34,7 +35,7 @@ export class ActivityWalker<TBag extends ActivityBag> extends StandardCodeWalker
                 bag.blockLevel === 2 &&
                 this.currentChar === '{',
             bag => {
-                let matches = /^([ \t]+)@Override\s+(public|protected)\s+void\s+onCreate\s*\(\s*Bundle\s+\w+\s*\)\s*$/m.exec(this.backpart)
+                let matches = removeComments(this.backpart).match(/^([ \t]+)@Override\s+(public|protected)\s+void\s+onCreate\s*\(\s*Bundle\s+\w+\s*\)\s*$/m);
                 if (matches) {
                     bag.isWithinMethod = true;
                     bag.indent = matches[1];

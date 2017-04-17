@@ -1,5 +1,6 @@
 import { TextCutter } from './../utils/text-cuter';
 import { StandardCodeWalker, StandardBag } from './../standard-code-walker';
+import { removeComments } from "../utils/remove-uselesses";
 
 export function cleanSdkBuildGradle(code: string): string {
     let result: string;
@@ -66,7 +67,7 @@ function analyzeCode(code: string): CleanBag {
             !bag.currentBlock &&
             textWalker.prevChar === '{',
         bag => {
-            let matches = textWalker.backpart.match(/dependencies\s*{$/);
+            let matches = removeComments(textWalker.backpart).match(/dependencies\s*{$/);
             if (matches && matches[0]) {
                 bag.currentBlock = { 
                     startsAt: textWalker.position,
@@ -116,7 +117,7 @@ function analyzeCode(code: string): CleanBag {
             bag.currentBlock &&
             textWalker.currentChar === 'c',
         bag => {
-            let matches = textWalker.forepart.match(/^compile\s*["']com.microsoft.azure.mobile:mobile-center-(analytics|crashes|distribute):[^]+?["']/);
+            let matches = removeComments(textWalker.forepart).match(/^compile\s*["']com.microsoft.azure.mobile:mobile-center-(analytics|crashes|distribute):[^]+?["']/);
             if (matches && matches[1]) 
                 bag.currentBlock.compiles.push({ 
                     module: matches[1], 

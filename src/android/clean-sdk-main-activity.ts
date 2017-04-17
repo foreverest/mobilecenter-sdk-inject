@@ -1,5 +1,6 @@
 import { TextCutter } from './../utils/text-cuter';
 import { ActivityWalker, ActivityBag } from './activity-walker';
+import { removeComments } from "../utils/remove-uselesses";
 //import * as _ from 'lodash'
 
 export function cleanSdkMainActivity(code: string, activityName: string): string {
@@ -47,7 +48,7 @@ function analyzeCode(code: string, activityName: string): CleanBag {
             !bag.currentStatement &&
             textWalker.currentChar === 'M',
         bag => {
-            let matches = textWalker.forepart.match(/^MobileCenter\s*.\s*start\(/);
+            let matches = removeComments(textWalker.forepart).match(/^MobileCenter\s*.\s*start\(/);
             if (matches && matches[0]) {
                 bag.currentStatement = { startsAt: textWalker.position };
                 bag.parenthesisLevel = 0;
