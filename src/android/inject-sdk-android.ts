@@ -49,7 +49,8 @@ function readBuildGradle(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModule
 }
 
 function fillBuildVariants(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModuleInfo> {
-    return gjs.parseText(moduleInfo.buildGradleContents)
+    const matches = moduleInfo.buildGradleContents.match(/(android\s*{[^]*})/);
+    return gjs.parseText(matches && matches.length ? matches[0] : moduleInfo.buildGradleContents)
         .then((representation: any) => {
             let buildTypes: string[] = ['debug', 'release'];
             let productFlavors: string[];
@@ -186,7 +187,7 @@ function selectMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidMod
     return promise.
         then(function (isFound: boolean) {
             if (!isFound)
-                throw new Error('Manifest file is not found.');
+                throw new Error('Main activity is not found.');
             return moduleInfo;
         });
 }

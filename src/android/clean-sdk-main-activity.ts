@@ -1,6 +1,6 @@
 import { TextCutter } from './../utils/text-cuter';
 import { ActivityWalker, ActivityBag } from './activity-walker';
-import { removeComments } from "../utils/remove-uselesses";
+import { removeComments } from "../utils/remove-comments";
 //import * as _ from 'lodash'
 
 export function cleanSdkMainActivity(code: string, activityName: string): string {
@@ -13,8 +13,6 @@ export function cleanSdkMainActivity(code: string, activityName: string): string
     let textCutter = new TextCutter(code);
     info.statements.forEach(x => textCutter.goto(x.startsAt).cut(x.length));
 
-    let r = textCutter.cutEmptyLines().result;
-    //let r = textCutter.result;
     return textCutter.cutEmptyLines().result;
 }
 

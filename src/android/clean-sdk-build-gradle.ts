@@ -1,6 +1,6 @@
 import { TextCutter } from './../utils/text-cuter';
 import { StandardCodeWalker, StandardBag } from './../standard-code-walker';
-import { removeComments } from "../utils/remove-uselesses";
+import { removeComments } from "../utils/remove-comments";
 
 export function cleanSdkBuildGradle(code: string): string {
     let result: string;
@@ -12,7 +12,7 @@ export function cleanSdkBuildGradle(code: string): string {
             block.compiles.forEach(compile => 
                 textCutter
                     .goto(compile.position)
-                    .cutLine()
+                    .cut(compile.text.length)
             );
             
             block.defs.forEach(def => {
@@ -99,7 +99,7 @@ function analyzeCode(code: string): CleanBag {
             bag.currentBlock &&
             textWalker.currentChar === 'd',
         bag => {
-            let matches = textWalker.forepart.match(/^def\s+(\w+)\s*=\s*["'](.+?)["']/);
+            let matches = removeComments(textWalker.forepart).match(/^def\s+(\w+)\s*=\s*["'](.+?)["']/);
             if (matches && matches[1] && matches[2]) 
                 bag.currentBlock.defs.push({ 
                     text: matches[0],
@@ -120,6 +120,7 @@ function analyzeCode(code: string): CleanBag {
             let matches = removeComments(textWalker.forepart).match(/^compile\s*["']com.microsoft.azure.mobile:mobile-center-(analytics|crashes|distribute):[^]+?["']/);
             if (matches && matches[1]) 
                 bag.currentBlock.compiles.push({ 
+                    text: matches[0],
                     module: matches[1], 
                     position: textWalker.position - bag.currentBlock.startsAt 
                 });
@@ -145,7 +146,8 @@ class IDependenciesBlock {
         value: string; 
         position: number 
     }[];
-    compiles: { 
+    compiles: {
+        text: string; 
         module: string; 
         position: number 
     }[];

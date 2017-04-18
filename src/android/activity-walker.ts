@@ -1,5 +1,5 @@
 import { StandardBag, StandardCodeWalker } from './../standard-code-walker';
-import { removeComments } from "../utils/remove-uselesses";
+import { removeComments } from "../utils/remove-comments";
 
 export class ActivityWalker<TBag extends ActivityBag> extends StandardCodeWalker<TBag> {
 
