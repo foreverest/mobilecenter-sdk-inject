@@ -12,6 +12,7 @@ export class TextWalker<TBag> {
     private _traps: TextWalkerTrap<TBag>[] = [];
 
     private _isStoped: boolean = false;
+    private _jumpPending: number;
 
     constructor(text: string, bag: TBag) {
         this._text = text;
@@ -48,11 +49,21 @@ export class TextWalker<TBag> {
     }
 
     step(): boolean {
+        if (this._jumpPending) {
+            this._position += this._jumpPending;
+            if (this._position < 0)
+                this._position = 0;
+            this._jumpPending = null;
+        }
         if (this._position >= this.text.length)
             return false;
         this.handleTraps();
         this._position++;
         return true;
+    }
+
+    jump(steps: number): void {
+        this._jumpPending = steps;
     }
 
     private handleTraps() {
