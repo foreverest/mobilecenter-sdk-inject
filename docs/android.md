@@ -1,5 +1,5 @@
 ## Algorithm overview
----
+
 The `injectSdkAndroid` function do the following steps in sequence:
 1. Find and read the android module’s `build.gradle` file
 2. Analyze the contents of the `build.gradle` file and extract the following info:
@@ -11,9 +11,8 @@ The `injectSdkAndroid` function do the following steps in sequence:
 6. On this step, we already have information about locations and contents of the `build.gradle` file and main activity file. It calls functions `cleanSdkBuildGradle`, `injectSdkBuildGradle`, `cleanSdkMainActivity`, `injectSdkMainActivity` in sequence, which behaviors are described in detail in the following sections.
 7. If there were no errors issued during the previous steps it saves changes to disk.
 
-
 ## Methods documentation
----
+
 ### **cleanSdkBuildGradle function**
 Removes results of any previous Mobile Center SDK integrations from the `build.gradle` file.
 
@@ -26,7 +25,7 @@ Just inserts _dependencies {}_ block with appropriate **def** and **compile** de
 
 ### **cleanSdkMainActivity function**
 Removes results of any previous Mobile Center SDK integrations from the main activity file. 
-Both `cleanSdkMainActivity` and `injectSdkMainActivity` functions use the shared logic for basic analyzing main activity code. It is described in details in the **_Shared main activity analyze algorithm_** section below.
+Both `cleanSdkMainActivity` and `injectSdkMainActivity` functions use the shared logic for basic analyzing main activity code. It is described in details in the [**_Shared main activity analyze algorithm_**](#shared-main-activity-analyze-algorithm) section below.
 Additionally they use their own logics for analyzing necessary details.
 
 It finds all import Mobile Center dependencies declarations before the main activity class declarations.
@@ -44,7 +43,7 @@ To find the main activity class declaration it looks for the `public class` with
 Inside the class it finds method `onCreate` which must be declared using `@Override` annotation. Also it must be either `public` or `protected`. The intend preceding the `@Override` annotation is used as a sample for further formatting inserted code.
 
 ## Algorithm limitations
----
+
 * The _projectPath_ & _moduleName_ arguments of the `injectSdkAndroid` function are used only to produce the path to the android module’s folder. It is worth considering not using two arguments, but instead using the single _modulePath_ argument.
 * Flavor dimensions & variant filters are currently ignored, as they are ignored in the Build service
 * The `gradlejs` npm package is used to parse `build.gradle` files. But eventually it behaves incorrectly if something is present before the _android {}_ block. Therefore it is necessary to use a regex to extract the appropriate part of the `build.gradle` file before parsing.
