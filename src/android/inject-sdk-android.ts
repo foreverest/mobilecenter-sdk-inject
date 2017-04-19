@@ -9,6 +9,25 @@ import { cleanSdkMainActivity } from "./clean-sdk-main-activity";
 const xml2js = require('xml2js');
 const gjs = require('gradlejs');
 
+/**
+ * Integrates Mobile Center SDK into the given android module
+ * 
+ * @param projectPath 
+ * The path to the android project
+ * @param moduleName 
+ * The name of the android module (subproject)
+ * @param buildVariant 
+ * The name of the build variant. 
+ * It is used to calculate a sequence of the source sets to look at in order to find manifest files as well as java code files. 
+ * @param sdkVersion 
+ * The version of the Mobile Center SDK to integrate
+ * @param appSecret 
+ * The App Secret
+ * @param sdkModules 
+ * The argument of type enum (number) which uses three bits to hold flags. 
+ * Each of the flags determines whether the corresponding Mobile Center SDK module is enabled or not.
+ */
+
 export function injectSdkAndroid(projectPath: string, moduleName: string, buildVariant: string,
     sdkVersion: string, appSecret: string, sdkModules: MobileCenterSdkModule): Promise<void> {
 
