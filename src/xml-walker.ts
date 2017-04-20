@@ -23,14 +23,11 @@ export class XmlWalker<TBag extends XmlBag> extends TextWalker<TBag> {
             bag => {
                 let matches = this.forepart.match(/^<\s*(\w+)\s*([^>]*?)?\s*(\/?)\s*>/);
                 if (matches && matches[0] && matches[1]){
-                    bag.current = {
-                        startsAt: this.position,
-                        text: matches[0], 
-                        name: matches[1],
-                        attributes: matches[2],
-                        parent: bag.current,
-                        children: []
-                    }
+                    bag.current = new XmlTag(matches[1], bag.current);
+                    bag.current.startsAt = this.position;
+                    bag.current.text = matches[0];
+                    bag.current.attributes = matches[2];
+
                     if (!bag.root)
                         bag.root = bag.current;
 
@@ -51,7 +48,7 @@ export class XmlWalker<TBag extends XmlBag> extends TextWalker<TBag> {
                 let matches = this.forepart.match(/^<\s*\/\s*([^>]*?)?\s*>/);
                 if (matches && matches[0] && matches[1]) {
                     if (matches[1] !== bag.current.name) {
-                        bag.error = 'finish tag ' + bag.current.name;
+                        bag.error = new Error('finish tag ' + bag.current.name); //TODO: Normal error description
                         return this.stop();
                     }
                     let startsAt = bag.current.startsAt + bag.current.text.length;
@@ -69,26 +66,40 @@ export class XmlWalker<TBag extends XmlBag> extends TextWalker<TBag> {
 }
 
 export class XmlBag {
-    root: IXmlTag;
-    current: IXmlTag;
-    error?: string;
+    root: XmlTag;
+    current: XmlTag;
+    error?: Error;
+    onTagReaded: (tag: XmlTag) => void;
 
     finishCurrent() {
         if (this.current.parent)
             this.current.parent.children.push(this.current);
+        if (this.onTagReaded)
+            this.onTagReaded(this.current);
         this.current = this.current.parent;
     }
 }
 
-interface IFragment {
+export interface IFragment {
     startsAt: number;
     text: string;
 }
 
-interface IXmlTag extends IFragment {
-    name: string;
+export class XmlTag implements IFragment {
     attributes: string;
-    body?: IFragment;
-    parent: IXmlTag;
-    children: IXmlTag[];
+    body: IFragment;
+    children: XmlTag[];
+    startsAt: number;
+    text: string;
+
+    constructor(
+        public name: string,
+        public parent?: XmlTag) {
+        
+        this.children = [];
+    }
+
+    get path(): string {
+        return this.parent ? `${this.parent.path}/${this.name}` : this.name;
+    }
 }
