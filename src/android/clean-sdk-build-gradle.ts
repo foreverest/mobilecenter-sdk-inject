@@ -21,11 +21,12 @@ export function cleanSdkBuildGradle(code: string): string {
                 if (!matches || matches.length === 1) {
                     textCutter
                         .goto(def.position)
-                        .cut(def.text.length);
+                        .cut(def.text.length)
+                        .cutEmptyLine();
                 }
             });
 
-            block.modifiedText = textCutter.cutEmptyLines().result;
+            block.modifiedText = textCutter.result;
     });
 
     if (info.dependenciesBlocks.length) {

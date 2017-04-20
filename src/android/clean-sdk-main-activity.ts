@@ -11,9 +11,13 @@ export function cleanSdkMainActivity(code: string, activityName: string): string
         throw new Error('Something was wrong during cleaning main activity.');
 
     let textCutter = new TextCutter(code);
-    info.statements.forEach(x => textCutter.goto(x.startsAt).cut(x.length));
+    info.statements.forEach(x => 
+        textCutter
+            .goto(x.startsAt)
+            .cut(x.length)
+            .cutEmptyLine());
 
-    return textCutter.cutEmptyLines().result;
+    return textCutter.result;
 }
 
 function analyzeCode(code: string, activityName: string): CleanBag {

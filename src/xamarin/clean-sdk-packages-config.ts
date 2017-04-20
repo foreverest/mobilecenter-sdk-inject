@@ -9,7 +9,10 @@ export function cleanSdkPackagesConfig(code: string): string {
     let textCutter = new TextCutter(code);
 
     info.packages.forEach(fragment => 
-        textCutter.goto(fragment.startsAt).cut(fragment.text.length)
+        textCutter
+            .goto(fragment.startsAt)
+            .cut(fragment.text.length)
+            .cutEmptyLine()
     );
 
     result = textCutter.result;
