@@ -1,3 +1,4 @@
+import { TextCutter } from './../utils/text-cuter';
 import { AndroidCodeWalker, AndroidCodeBag } from './android/android-code-walker';
 import { XmlWalker, XmlBag, XmlTag } from './../xml-walker';
 import * as fs from 'fs';
@@ -8,6 +9,7 @@ import { MobileCenterSdkModule } from "../mobilecenter-sdk-module";
 import { ProjectType } from "./project-type";
 import { cleanSdkPackagesConfig } from "./clean-sdk-packages-config";
 import { injectSdkPackagesConfig } from "./inject-sdk-packages-config";
+import { injectSdkCsproj } from "./inject-sdk-csproj";
 // import * as _ from 'lodash'
 // import { cleanSdkBuildGradle } from "./clean-sdk-build-gradle";
 // import { cleanSdkMainActivity } from "./clean-sdk-main-activity";
@@ -22,19 +24,19 @@ const IOS_PROJECT_TYPE: string = 'FEACFBD2-3405-455C-9665-78FE426C6842';
 //     ['v4.0.3']: 'monoandroid403',
 // };
 
-export function injectSdkXamarin(projectPath: string, sdkVersion: string, 
+export function injectSdkXamarin(csprojPath: string, sdkVersion: string,
     androidAppSecret: string, iOsAppSecret: string, sdkModules: MobileCenterSdkModule): Promise<void> {
 
-    if (!projectPath || !sdkVersion || !sdkModules)
+    if (!csprojPath || !sdkVersion || !sdkModules)
         return Promise.reject(new Error("Invalid arguments."));
-    
-    let promise = Promise.resolve({ 
-        projectPath, 
-        referenceTags: [], 
-        codeFiles: [] 
+
+    let promise = Promise.resolve({
+        csprojPath,
+        referenceTags: [],
+        codeFiles: []
     });
 
-    promise = promise    
+    promise = promise
         .then(readProjectFile)
         .then(readPackagesConfig)
         .then(analyzeProjectFile)
@@ -51,10 +53,10 @@ export function injectSdkXamarin(projectPath: string, sdkVersion: string,
         .then(function (projectInfo: IXamarinProjectInfo) {
             return injectPackagesConfig(projectInfo, sdkVersion, sdkModules);
         })
-        // .then(function (projectInfo: IXamarinProjectInfo) {
-        //     return injectMainActivity(projectInfo, appSecret, sdkModules);
-        // })
-        // .then(saveChanges);
+        .then(function (projectInfo: IXamarinProjectInfo) {
+            return injectCsproj(projectInfo, sdkVersion, sdkModules);
+        })
+    // .then(saveChanges);
 
     return promise;
 }
@@ -62,14 +64,14 @@ export function injectSdkXamarin(projectPath: string, sdkVersion: string,
 function readProjectFile(projectInfo: IXamarinProjectInfo): Promise<IXamarinProjectInfo> {
     return new Promise<IXamarinProjectInfo>(function (resolve, reject) {
 
-        fs.exists(projectInfo.projectPath, function (exists: boolean) {
+        fs.exists(projectInfo.csprojPath, function (exists: boolean) {
             if (!exists)
                 return reject(new Error('The project file is not found.'));
 
-            fs.readFile(projectInfo.projectPath, 'utf8', function (err, data: string) {
+            fs.readFile(projectInfo.csprojPath, 'utf8', function (err, data: string) {
                 if (err)
                     reject(err);
-                projectInfo.projectContent = data;
+                projectInfo.csprojContent = data;
                 resolve(projectInfo);
             });
         });
@@ -77,7 +79,7 @@ function readProjectFile(projectInfo: IXamarinProjectInfo): Promise<IXamarinProj
 }
 
 function readPackagesConfig(projectInfo: IXamarinProjectInfo): Promise<IXamarinProjectInfo> {
-    const packagesConfigPath = path.join(path.dirname(projectInfo.projectPath), 'packages.config');
+    const packagesConfigPath = path.join(path.dirname(projectInfo.csprojPath), 'packages.config');
     return new Promise<IXamarinProjectInfo>(function (resolve, reject) {
         fs.readFile(packagesConfigPath, 'utf8', function (err, data: string) {
             projectInfo.packagesConfigContent = err ? '' : data;
@@ -111,16 +113,16 @@ function analyzeProjectFile(projectInfo: IXamarinProjectInfo): Promise<IXamarinP
                 break;
         }
     }
-    
-    let xmlWalker: XmlWalker<XmlBag> = new XmlWalker(projectInfo.projectContent, xmlBag);
+
+    let xmlWalker: XmlWalker<XmlBag> = new XmlWalker(projectInfo.csprojContent, xmlBag);
     xmlWalker.walk();
 
     return xmlBag.error ? Promise.reject(xmlBag.error) : Promise.resolve(projectInfo);
 }
 
 function determineProjectType(projectInfo: IXamarinProjectInfo): Promise<IXamarinProjectInfo> {
-    
-    if (~projectInfo.projectTypeGuids.toUpperCase().indexOf(ANDROID_PROJECT_TYPE) && projectInfo.androidProject) 
+
+    if (~projectInfo.projectTypeGuids.toUpperCase().indexOf(ANDROID_PROJECT_TYPE) && projectInfo.androidProject)
         projectInfo.projectType = ProjectType.Android;
 
     return Promise.resolve(projectInfo);
@@ -133,7 +135,7 @@ function androidFindMainActivity(projectInfo: IXamarinProjectInfo): Promise<IXam
         promise = promise.then(function (isFound: boolean) {
             if (isFound)
                 return Promise.resolve(true);
-            let fullPath = path.join(path.dirname(projectInfo.projectPath), codeFile);
+            let fullPath = path.join(path.dirname(projectInfo.csprojPath), codeFile);
             return new Promise<boolean>(function (resolve, reject) {
                 fs.exists(fullPath, function (exists: boolean) {
                     if (!exists)
@@ -142,7 +144,7 @@ function androidFindMainActivity(projectInfo: IXamarinProjectInfo): Promise<IXam
                     fs.readFile(fullPath, 'utf8', function (err: NodeJS.ErrnoException, data: string) {
                         if (err)
                             return reject(err);
-                        
+
                         let androidCodeWalker = new AndroidCodeWalker(data, new AndroidCodeBag());
                         androidCodeWalker.addTrap(
                             bag => bag.isWithinClass,
@@ -170,13 +172,14 @@ function androidFindMainActivity(projectInfo: IXamarinProjectInfo): Promise<IXam
 
 function injectPackagesConfig(projectInfo: IXamarinProjectInfo, sdkVersion: string, sdkModules: MobileCenterSdkModule): Promise<IXamarinProjectInfo> {
     let packagesStatements: string[] = [];
-    
+
     let targetFramework: string = determineTargetFramework(projectInfo.androidProject.targetFrameworkVersion);
 
-    packagesStatements.push(`<package id="Microsoft.Azure.Mobile" version="${sdkVersion}" targetFramework="${targetFramework}" />`);
-    if (sdkModules & MobileCenterSdkModule.Analytics) 
+    if (sdkModules)
+        packagesStatements.push(`<package id="Microsoft.Azure.Mobile" version="${sdkVersion}" targetFramework="${targetFramework}" />`);
+    if (sdkModules & MobileCenterSdkModule.Analytics)
         packagesStatements.push(`<package id="Microsoft.Azure.Mobile.Analytics" version="${sdkVersion}" targetFramework="${targetFramework}" />`);
-    if (sdkModules & MobileCenterSdkModule.Crashes) 
+    if (sdkModules & MobileCenterSdkModule.Crashes)
         packagesStatements.push(`<package id="Microsoft.Azure.Mobile.Crashes" version="${sdkVersion}" targetFramework="${targetFramework}" />`);
     if (sdkModules & MobileCenterSdkModule.Distribute)
         packagesStatements.push(`<package id="Microsoft.Azure.Mobile.Distribute" version="${sdkVersion}" targetFramework="${targetFramework}" />`);
@@ -192,20 +195,80 @@ function injectPackagesConfig(projectInfo: IXamarinProjectInfo, sdkVersion: stri
 
 function determineTargetFramework(targetFrameworkVersion: string): string {
     let matches = /^v((?:\d\.)*\d)/i.exec(targetFrameworkVersion);
-    return 'monoandroid' + 
+    return 'monoandroid' +
         (matches && matches[1] ? matches[1].replace(/\./g, '') : '403');
 }
 
+function injectCsproj(projectInfo: IXamarinProjectInfo, sdkVersion: string, sdkModules: MobileCenterSdkModule): Promise<IXamarinProjectInfo> {
+    //clean csproj
+    // TODO: handle packages.config declaration
+    let textCutter = new TextCutter(projectInfo.csprojContent);
+    projectInfo.referenceTags.forEach((tag: XmlTag) => 
+        textCutter
+            .goto(tag.startsAt)
+            .cut(tag.text.length)
+            .cutEmptyLine()
+    );
+    let cleanedCode = textCutter.result;
+
+    let referenceStatements: string[] = getReferenceStatements(projectInfo.projectType, sdkVersion, sdkModules);
+
+    try {
+        projectInfo.csprojContent = injectSdkCsproj(cleanedCode, referenceStatements);
+    } catch (err) {
+        return Promise.reject(err);
+    }
+    return Promise.resolve(projectInfo);
+}
+
+function getReferenceStatements(projectType: ProjectType, sdkVersion: string, sdkModules: MobileCenterSdkModule) {
+    let result: string[] = [];
+    if (sdkModules) {
+        switch (projectType) {
+            case ProjectType.Android:
+                result.push(buildReferenceTag(projectType, 'Microsoft.Azure.Mobile', sdkVersion));
+                result.push(buildReferenceTag(projectType, 'Microsoft.Azure.Mobile', sdkVersion, 'Microsoft.Azure.Mobile.Android.Bindings.dll'));
+                if (sdkModules & MobileCenterSdkModule.Analytics) {
+                    result.push(buildReferenceTag(projectType, 'Microsoft.Azure.Mobile.Analytics', sdkVersion));
+                    result.push(buildReferenceTag(projectType, 'Microsoft.Azure.Mobile.Analytics', sdkVersion, 'Microsoft.Azure.Mobile.Analytics.Android.Bindings.dll'));
+                }
+                if (sdkModules & MobileCenterSdkModule.Crashes) {
+                    result.push(buildReferenceTag(projectType, 'Microsoft.Azure.Mobile.Crashes', sdkVersion));
+                    result.push(buildReferenceTag(projectType, 'Microsoft.Azure.Mobile.Crashes', sdkVersion, 'Microsoft.Azure.Mobile.Crashes.Android.Bindings.dll'));
+                }
+                if (sdkModules & MobileCenterSdkModule.Distribute) {
+                    result.push(buildReferenceTag(projectType, 'Microsoft.Azure.Mobile.Distribute', sdkVersion));
+                    result.push(buildReferenceTag(projectType, 'Microsoft.Azure.Mobile.Distribute', sdkVersion, 'Microsoft.Azure.Mobile.Distribute.Android.Bindings.dll'));
+                }
+                break;
+        }
+    }
+    return result;
+}
+
+function buildReferenceTag(projectType: ProjectType, packageName: string, sdkVersion: string, fileName: string = packageName + '.dll'): string {
+    let targetFramework: string;
+    switch (projectType) {
+        case ProjectType.Android:
+            targetFramework = 'MonoAndroid403';
+            break;
+    }
+    // TODO: correctly locate packages folder
+    return  `<Reference Include="${packageName}, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">\n` +
+            `  <HintPath>..\\packages\\${packageName}.${sdkVersion}\\lib\\${targetFramework}\\${fileName}</HintPath>\n` +
+            '</Reference>';
+}
 
 interface IXamarinProjectInfo {
-    projectPath: string;
-    projectContent?: string;
+    csprojPath: string;
+    csprojContent?: string;
     packagesConfigContent?: string;
 
     projectType?: ProjectType;
 
     referenceTags: XmlTag[];
     packagesConfigTag?: XmlTag;
+
     codeFiles: string[];
     projectTypeGuids?: string;
 

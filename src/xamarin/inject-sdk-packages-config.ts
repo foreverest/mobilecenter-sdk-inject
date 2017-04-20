@@ -12,7 +12,7 @@ export function injectSdkPackagesConfig(code: string, packages: string[]): strin
     result = 
         result.substr(0, info.injectAt).replace(/\s*$/, intend) +
         packages.join(intend) +
-        result.substr(info.injectAt).replace(/^\s*/, '\n');
+        result.substr(info.injectAt).replace(/^\s*\n/, '\n');
 
     return result;
 }
