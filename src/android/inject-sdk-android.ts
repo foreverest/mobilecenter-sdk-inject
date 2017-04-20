@@ -249,16 +249,18 @@ function readMainActivity(moduleInfo: IAndroidModuleInfo): Promise<IAndroidModul
 
 function injectBuildGradle(moduleInfo: IAndroidModuleInfo, sdkVersion: string, sdkModules: MobileCenterSdkModule): Promise<IAndroidModuleInfo> {
     let lines: string[] = [];
-    lines.push('dependencies {');
-    lines.push(`    def mobileCenterSdkVersion = '${sdkVersion}'`);
-    if (sdkModules & MobileCenterSdkModule.Analytics)
-        lines.push('    compile "com.microsoft.azure.mobile:mobile-center-analytics:${mobileCenterSdkVersion}"');
-    if (sdkModules & MobileCenterSdkModule.Crashes)
-        lines.push('    compile "com.microsoft.azure.mobile:mobile-center-crashes:${mobileCenterSdkVersion}"');
-    if (sdkModules & MobileCenterSdkModule.Distribute)
-        lines.push('    compile "com.microsoft.azure.mobile:mobile-center-distribute:${mobileCenterSdkVersion}"');
-    lines.push('}');
-
+    if (sdkModules) {
+        lines.push('dependencies {');
+        lines.push(`    def mobileCenterSdkVersion = '${sdkVersion}'`);
+        if (sdkModules & MobileCenterSdkModule.Analytics)
+            lines.push('    compile "com.microsoft.azure.mobile:mobile-center-analytics:${mobileCenterSdkVersion}"');
+        if (sdkModules & MobileCenterSdkModule.Crashes)
+            lines.push('    compile "com.microsoft.azure.mobile:mobile-center-crashes:${mobileCenterSdkVersion}"');
+        if (sdkModules & MobileCenterSdkModule.Distribute)
+            lines.push('    compile "com.microsoft.azure.mobile:mobile-center-distribute:${mobileCenterSdkVersion}"');
+        lines.push('}');
+    }
+        
     try {
         let cleanedCode = cleanSdkBuildGradle(moduleInfo.buildGradleContents);
         moduleInfo.buildGradleContents = injectSdkBuildGradle(cleanedCode, lines);
@@ -271,8 +273,8 @@ function injectBuildGradle(moduleInfo: IAndroidModuleInfo, sdkVersion: string, s
 function injectMainActivity(moduleInfo: IAndroidModuleInfo, appSecret: string, sdkModules: MobileCenterSdkModule): Promise<IAndroidModuleInfo> {
     let importStatements: string[] = [];
     let sdkModulesList: string[] = [];
-
-    importStatements.push('import com.microsoft.azure.mobile.MobileCenter;');
+    if (sdkModules)
+        importStatements.push('import com.microsoft.azure.mobile.MobileCenter;');
     if (sdkModules & MobileCenterSdkModule.Analytics) {
         importStatements.push('import com.microsoft.azure.mobile.analytics.Analytics;');
         sdkModulesList.push('Analytics.class');
