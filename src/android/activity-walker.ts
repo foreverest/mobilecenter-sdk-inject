@@ -9,7 +9,6 @@ export class ActivityWalker<TBag extends ActivityBag> extends StandardCodeWalker
         //class definition
         this.addTrap(
             bag =>
-                bag.significant &&
                 bag.blockLevel === 1 &&
                 this.currentChar === '{',
             bag => {
@@ -20,7 +19,6 @@ export class ActivityWalker<TBag extends ActivityBag> extends StandardCodeWalker
         );
         this.addTrap(
             bag =>
-                bag.significant &&
                 bag.blockLevel === 0 &&
                 bag.isWithinClass &&
                 this.currentChar === '}',
@@ -30,7 +28,6 @@ export class ActivityWalker<TBag extends ActivityBag> extends StandardCodeWalker
         //onCreate method definition
         this.addTrap(
             bag =>
-                bag.significant &&
                 bag.isWithinClass &&
                 bag.blockLevel === 2 &&
                 this.currentChar === '{',
@@ -44,7 +41,6 @@ export class ActivityWalker<TBag extends ActivityBag> extends StandardCodeWalker
         );
         this.addTrap(
             bag =>
-                bag.significant &&
                 bag.isWithinMethod &&
                 bag.blockLevel === 1,
             bag => 

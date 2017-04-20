@@ -26,7 +26,6 @@ function analyzeCode(code: string, activityName: string): InjectBag {
     //import statements
     textWalker.addTrap(
         bag =>
-            bag.significant &&
             !bag.blockLevel &&
             textWalker.currentChar === 'i',
         bag => {

@@ -24,7 +24,6 @@ function analyzeCode(code: string, activityName: string): CleanBag {
     //collecting import statements
     textWalker.addTrap(
         bag =>
-            bag.significant &&
             bag.blockLevel === 0 &&
             textWalker.currentChar === 'i',
         bag => {
@@ -57,7 +56,6 @@ function analyzeCode(code: string, activityName: string): CleanBag {
     //tracking parenthesis
     textWalker.addTrap(
         bag =>
-            bag.significant &&
             bag.isWithinMethod &&
             bag.currentStatement &&
             textWalker.currentChar === '(',
@@ -66,7 +64,6 @@ function analyzeCode(code: string, activityName: string): CleanBag {
     );
     textWalker.addTrap(
         bag =>
-            bag.significant &&
             bag.isWithinMethod &&
             bag.currentStatement &&
             textWalker.currentChar === ')',
@@ -77,7 +74,6 @@ function analyzeCode(code: string, activityName: string): CleanBag {
     //catching ';'
     textWalker.addTrap(
         bag =>
-            bag.significant &&
             bag.isWithinMethod &&
             bag.currentStatement &&
             bag.parenthesisLevel === 0 &&

@@ -62,7 +62,6 @@ function analyzeCode(code: string): CleanBag {
     //collecting dependencies blocks
     textWalker.addTrap(
         bag =>
-            bag.significant &&
             bag.blockLevel === 1 &&
             !bag.currentBlock &&
             textWalker.prevChar === '{',
@@ -79,7 +78,6 @@ function analyzeCode(code: string): CleanBag {
     );
     textWalker.addTrap(
         bag =>
-            bag.significant &&
             bag.blockLevel === 1 &&
             bag.currentBlock &&
             textWalker.nextChar === '}',
@@ -95,7 +93,6 @@ function analyzeCode(code: string): CleanBag {
     //catching defs
     textWalker.addTrap(
         bag =>
-            bag.significant &&
             bag.currentBlock &&
             textWalker.currentChar === 'd',
         bag => {
@@ -113,7 +110,6 @@ function analyzeCode(code: string): CleanBag {
     //catching compiles
     textWalker.addTrap(
         bag =>
-            bag.significant &&
             bag.currentBlock &&
             textWalker.currentChar === 'c',
         bag => {
