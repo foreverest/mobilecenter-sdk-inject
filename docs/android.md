@@ -62,3 +62,6 @@ import
 com.microsoft.azure.mobile.MobileCenter;
 ```
 > TODO: An optimization is necessary using the new `TextWalker#jump()` capability
+> TODO: Replace IStatement with IFragment in _android/clean-sdk-main-activity.ts_
+> TODO: Rename `\*statments` arguments names with `\*lines` in `injectSdk\*` functions
+> TODO: Use removeComments() in _android/inject-sdk-main-activity.ts_
