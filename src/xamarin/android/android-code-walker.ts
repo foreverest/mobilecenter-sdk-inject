@@ -59,10 +59,10 @@ export class AndroidCodeWalker<TBag extends AndroidCodeBag> extends StandardCode
                 bag.isWithinClass &&
                 this.currentChar === '{',
             bag => {
-                let matches = removeComments(this.backpart).match(/^([ \t]+)(?:override\s+protected|protected\s+override)\s+OnCreate\s*\(\s*Bundle\s+\w+\s*\)\s*$/m);
+                let matches = removeComments(this.backpart).match(/^([ \t]+)(?:override\s+protected|protected\s+override)\s+void\s+OnCreate\s*\(\s*Bundle\s+\w+\s*\)\s*$/m);
                 if (matches) {
                     bag.isWithinMethod = true;
-                    bag.indent = matches[1] + matches[1].substring(0, matches[1].length / bag.blockLevel);
+                    bag.indent = matches[1];
                 }
             }
         );

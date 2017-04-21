@@ -1,6 +1,7 @@
-import { XmlBag, XmlWalker, XmlTag, IFragment } from './../xml-walker';
+import { XmlBag, XmlWalker, XmlTag } from './../xml-walker';
 import { TextCutter } from './../utils/text-cuter';
 import { removeComments } from "../utils/remove-comments";
+import { IFragment } from "../ifragment";
 
 export function cleanSdkPackagesConfig(code: string): string {
     let result: string;

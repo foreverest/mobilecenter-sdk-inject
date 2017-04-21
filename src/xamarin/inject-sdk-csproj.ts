@@ -1,4 +1,4 @@
-import { XmlBag, XmlWalker, XmlTag, IFragment } from './../xml-walker';
+import { XmlBag, XmlWalker, XmlTag } from './../xml-walker';
 import { removeComments } from "../utils/remove-comments";
 import * as _ from 'lodash'
 

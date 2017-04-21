@@ -19,7 +19,7 @@
             },
             "externalConsole": false,
             "sourceMaps": true,
-            "outDir": "${workspaceRoot}/lib"
+            "outFiles": ["${workspaceRoot}/lib/**/*.js"]
         },
         {
             "name": "Attach",
@@ -29,7 +29,6 @@
             "address": "localhost",
             "restart": false,
             "sourceMaps": false,
-            "outDir": null,
             "localRoot": "${workspaceRoot}",
             "remoteRoot": null
         }

@@ -1,4 +1,4 @@
-import { XmlBag, XmlWalker, XmlTag, IFragment } from './../xml-walker';
+import { XmlBag, XmlWalker, XmlTag } from './../xml-walker';
 import { removeComments } from "../utils/remove-comments";
 
 export function injectSdkPackagesConfig(code: string, packages: string[]): string {

@@ -15,11 +15,13 @@ node ./lib/mobilecenter-sdk-inject <keys>
 
 ### Keys
 ```
+-t: The following argument must be <projectType> ("android" or "xamarin")
 -p: The following argument must be <projectPath>
 -m: The following argument must be <moduleName>
 -b: The following argument must be <buildVariant>
 -v: The following argument must be <sdkVersion>
--s: The following argument must be <appSecret>
+-as: The following argument must be <androidAppSecret>
+-is: The following argument must be <iOsAppSecret>
 --analytics: Includes Mobile Center SDK Analytics module
 --crashes: Includes Mobile Center SDK Crashes module
 --distribute: Includes Mobile Center SDK Distribute module

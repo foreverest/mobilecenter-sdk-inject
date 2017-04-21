@@ -1,4 +1,5 @@
 import { TextWalker } from './utils/text-walker/text-walker';
+import { IFragment } from "./ifragment";
 
 export class XmlWalker<TBag extends XmlBag> extends TextWalker<TBag> {
 
@@ -78,11 +79,6 @@ export class XmlBag {
             this.onTagReaded(this.current);
         this.current = this.current.parent;
     }
-}
-
-export interface IFragment {
-    startsAt: number;
-    text: string;
 }
 
 export class XmlTag implements IFragment {
