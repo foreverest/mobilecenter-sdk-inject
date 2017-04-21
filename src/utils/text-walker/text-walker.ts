@@ -49,16 +49,16 @@ export class TextWalker<TBag> {
     }
 
     step(): boolean {
+        if (this._position >= this.text.length)
+            return false;
+        this.handleTraps();
         if (this._jumpPending) {
             this._position += this._jumpPending;
             if (this._position < 0)
                 this._position = 0;
             this._jumpPending = null;
-        }
-        if (this._position >= this.text.length)
-            return false;
-        this.handleTraps();
-        this._position++;
+        } else
+            this._position++;
         return true;
     }
 
