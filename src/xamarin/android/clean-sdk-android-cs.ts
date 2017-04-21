@@ -40,8 +40,6 @@ function analyzeCode(code: string): CleanBag {
             }
         }
     );
-    //MobileCenter.Start("4147bbb5-2c79-44fe-914f-3422c00f92ba",
-                   //typeof(Analytics), typeof(Crashes));
     //start SDK statements
     walker.addTrap(
         bag =>
@@ -49,7 +47,7 @@ function analyzeCode(code: string): CleanBag {
             !bag.currentStatement &&
             walker.currentChar === 'M',
         bag => {
-            let matches = removeComments(walker.forepart).match(/^MobileCenter\s*.\s*start\(/);
+            let matches = removeComments(walker.forepart).match(/^MobileCenter\s*.\s*Start\(/);
             if (matches && matches[0]) {
                 bag.currentStatement = { startsAt: walker.position, text: '' };
                 bag.parenthesisLevel = 0;

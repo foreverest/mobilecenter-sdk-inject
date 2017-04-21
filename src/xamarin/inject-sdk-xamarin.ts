@@ -243,17 +243,19 @@ function injectCsproj(projectInfo: IXamarinProjectInfo, sdkVersion: string, sdkM
     );
     let cleanedCode = textCutter.result;
 
-    let referenceStatements: string[] = getReferenceStatements(projectInfo.projectType, sdkVersion, sdkModules);
-
+    let referenceLines: string[] = getReferenceLines(projectInfo.projectType, sdkVersion, sdkModules);
+    let noneLines: string[] = [];
+    if (!projectInfo.packagesConfigTag && projectInfo.packagesConfigContent.trim())
+        noneLines.push('<None Include="packages.config" />');
     try {
-        projectInfo.csprojContent = injectSdkCsproj(cleanedCode, referenceStatements);
+        projectInfo.csprojContent = injectSdkCsproj(cleanedCode, referenceLines, noneLines);
     } catch (err) {
         return Promise.reject(err);
     }
     return Promise.resolve(projectInfo);
 }
 
-function getReferenceStatements(projectType: ProjectType, sdkVersion: string, sdkModules: MobileCenterSdkModule) {
+function getReferenceLines(projectType: ProjectType, sdkVersion: string, sdkModules: MobileCenterSdkModule) {
     let result: string[] = [];
     if (sdkModules) {
         switch (projectType) {

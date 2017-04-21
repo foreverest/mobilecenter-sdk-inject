@@ -28,7 +28,7 @@ export class AndroidCodeWalker<TBag extends AndroidCodeBag> extends StandardCode
                 !bag.isWithinClass &&
                 this.currentChar === '{',
             bag => {
-                const looksLikeActivityClass = /class\s+(\w+)\s*:\s*\w+\s*$/.test(removeComments(this.backpart));
+                const looksLikeActivityClass = /class\s+(\w+)\s*:\s*[\w<>\.]+\s*$/.test(removeComments(this.backpart));
                 const hasActivityAttribute = bag.attributes.some(x => x.name === 'Activity');
                 const hasActivityAttributeWithMainLauncher = bag.attributes.some(x => x.name === 'Activity' && 
                     /MainLauncher\s*=\s*true/.test(x.arguments));
