@@ -48,8 +48,8 @@ export class StandardCodeWalker<TBag extends StandardBag> extends TextWalker<TBa
             bag =>
                 this.currentChar === '\'' ||
                 this.currentChar === '"',
-            bag => {
-                let matches = this.forepart.match(`^${this.currentChar}[^]*?${this.currentChar}`);
+            bag => { 
+                let matches = this.forepart.match(`^${this.currentChar}([^${this.currentChar}\\\\]|\\\\.)*${this.currentChar}`);
                 if (matches && matches[0])
                     this.jump(matches[0].length);
             }
